@@ -82,7 +82,10 @@ function showToast(msg) {
 
 function playSound() {
   const audio = document.getElementById('successSound');
-  if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+  if (audio) { 
+    audio.currentTime = 0; 
+    audio.play().catch(() => {}); 
+  }
 }
 
 function buildImageUrl(url, name) {
@@ -96,20 +99,30 @@ function buildImageUrl(url, name) {
 // الحفظ والتحميل من localStorage
 // =====================================================
 function saveCart() {
-  try { localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart)); } catch(e) {}
+  try { 
+    localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart)); 
+  } catch(e) {} 
 }
+
 function saveFavorites() {
-  try { localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(favorites)); } catch(e) {}
+  try { 
+    localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(favorites)); 
+  } catch(e) {} 
 }
+
 function loadLocalState() {
   try {
     const c = localStorage.getItem(STORAGE_KEYS.cart);
     if (c) cart = JSON.parse(c) || [];
+    
     const f = localStorage.getItem(STORAGE_KEYS.favorites);
     if (f) favorites = JSON.parse(f) || [];
+    
     const lp = localStorage.getItem(STORAGE_KEYS.lastProduct);
     if (lp) lastProductId = parseInt(lp);
-  } catch(e) { console.error('loadLocalState error:', e); }
+  } catch(e) { 
+    console.error('loadLocalState error:', e); 
+  }
 }
 
 // =====================================================
@@ -121,9 +134,15 @@ async function loadStoreData() {
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data();
-      if (data.storeConfig) storeConfig = { ...DEFAULT_STORE_CONFIG, ...data.storeConfig };
-      if (Array.isArray(data.products)) products = data.products;
-      if (Array.isArray(data.offers)) offers = data.offers;
+      if (data.storeConfig) {
+        storeConfig = { ...DEFAULT_STORE_CONFIG, ...data.storeConfig };
+      }
+      if (Array.isArray(data.products)) {
+        products = data.products;
+      }
+      if (Array.isArray(data.offers)) {
+        offers = data.offers;
+      }
     }
   } catch (e) {
     console.error('loadStoreData error:', e);
@@ -159,6 +178,7 @@ async function loadOrdersFromFirebase(filterType) {
     let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
 
     const now = new Date();
+    
     if (filterType === 'today') {
       const today = new Date().toDateString();
       list = list.filter(o => {
@@ -254,11 +274,14 @@ function applyStoreConfig() {
 // =====================================================
 // عرض المنتجات
 // =====================================================
-const categoryLabels = { men: 'رجالي', women: 'حريمي', kids: 'ولادي', all: 'الكل' };
+const categoryLabels = { men: 'رجالي', women: 'حريمي', kids: 'أحذية', all: 'الكل' };
 
 function getFilteredProducts() {
   let list = [...products];
-  if (currentCategory !== 'all') list = list.filter(p => p.category === currentCategory);
+  
+  if (currentCategory !== 'all') {
+    list = list.filter(p => p.category === currentCategory);
+  }
   
   if (currentSearchQuery) {
     const q = currentSearchQuery.toLowerCase().trim();
@@ -291,8 +314,9 @@ function renderProductCard(p) {
   const isAvail = p.isAvailable !== false;
   
   let badge = '';
-  if (!isAvail) badge = '<span class="product-badge unavailable">غير متوفر</span>';
-  else if (hasOffer) {
+  if (!isAvail) {
+    badge = '<span class="product-badge unavailable">غير متوفر</span>';
+  } else if (hasOffer) {
     const disc = Math.round((1 - p.offerPrice / p.price) * 100);
     badge = `<span class="product-badge sale">-${disc}%</span>`;
   } else if (p.isNew) {
@@ -454,8 +478,13 @@ function bindProductEvents(container) {
 // =====================================================
 function toggleFavorite(id) {
   const idx = favorites.indexOf(id);
-  if (idx === -1) { favorites.push(id); showToast('تمت الإضافة للمفضلة'); }
-  else { favorites.splice(idx, 1); showToast('تمت الإزالة من المفضلة'); }
+  if (idx === -1) { 
+    favorites.push(id); 
+    showToast('تمت الإضافة للمفضلة'); 
+  } else { 
+    favorites.splice(idx, 1); 
+    showToast('تمت الإزالة من المفضلة'); 
+  }
   saveFavorites();
   renderProducts();
   renderFeatured();
@@ -1229,13 +1258,13 @@ function showAdminLoginModal() {
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.remove('admin-open');
-  document.body.style.overflow = 'auto'; // إرجاع السكرول
+  document.body.style.overflow = 'auto';
 }
 
 function showAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.add('admin-open');
-  document.body.style.overflow = 'hidden'; // منع السكرول في الخلفية
+  document.body.style.overflow = 'hidden';
   
   const overlay = document.createElement('div');
   overlay.className = 'admin-panel-overlay show';
@@ -1296,7 +1325,7 @@ function showAdminDashboard() {
               <select id="newCategory" class="admin-input">
                 <option value="men">رجالي</option>
                 <option value="women">حريمي</option>
-                <option value="kids">ولادي</option>
+                <option value="kids">أحذية</option>
               </select>
             </div>
           </div>
@@ -1458,7 +1487,7 @@ function showAdminDashboard() {
     
     if (!name || isNaN(price)) { showToast('أدخل الاسم والسعر'); return; }
     
-    const sizesMap = { men: ['S','M','L','XL','XXL'], women: ['XS','S','M','L','XL'], kids: ['2-3 سنوات','4-5 سنوات','6-7 سنوات','8-9 سنوات'] };
+    const sizesMap = { men: ['S','M','L','XL','XXL'], women: ['XS','S','M','L','XL'], kids: ['38','39','40','41','42','43','44','45'] };
     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
     
     products.push({
@@ -1706,7 +1735,7 @@ function showAdminDashboard() {
 // Init
 // =====================================================
 async function init() {
-  document.body.style.overflow = 'auto'; // ضمان السكرول في البداية
+  document.body.style.overflow = 'auto';
   
   loadLocalState();
   setupDarkMode();
@@ -1722,9 +1751,6 @@ async function init() {
   renderCart();
   updateCartCount();
   
-  // =====================================================
-  // إعداد القائمة الجانبية وزرار الرجوع (Routing)
-  // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
   
@@ -1777,9 +1803,6 @@ async function init() {
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
   
-  // =====================================================
-  // ربط باقي الأزرار
-  // =====================================================
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });

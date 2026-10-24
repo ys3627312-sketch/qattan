@@ -52,7 +52,7 @@ body.dark-mode {
 }
 
 /* ============================================
-   RESET
+   RESET & BASE
    ============================================ */
 * {
   margin: 0;
@@ -61,7 +61,9 @@ body.dark-mode {
   font-family: 'Cairo', system-ui, sans-serif;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   background: var(--bg-body);
@@ -73,10 +75,30 @@ body {
   overflow-x: hidden;
 }
 
-img { max-width: 100%; height: auto; display: block; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-a { color: inherit; text-decoration: none; }
-input, select, textarea { font-family: inherit; }
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
 
 .container {
   max-width: 1280px;
@@ -230,8 +252,14 @@ input, select, textarea { font-family: inherit; }
 }
 
 @keyframes pageFade {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ============================================
@@ -368,7 +396,9 @@ input, select, textarea { font-family: inherit; }
   transition: gap 0.2s ease;
 }
 
-.section-link:hover { gap: 10px; }
+.section-link:hover {
+  gap: 10px;
+}
 
 .results-count {
   font-size: 0.85rem;
@@ -376,7 +406,7 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* ============================================
-   PAGE HEADER (for new/offers/favorites/orders)
+   PAGE HEADER
    ============================================ */
 .page-header {
   text-align: center;
@@ -689,7 +719,7 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* ============================================
-   OFFERS GRID
+   OFFERS
    ============================================ */
 .offers-grid {
   display: grid;
@@ -1136,7 +1166,6 @@ input, select, textarea { font-family: inherit; }
   line-height: 1.7;
 }
 
-/* الردود على التقييمات */
 .reply-item.store-reply {
   background: rgba(201, 169, 97, 0.1);
   border-right: 3px solid var(--accent);
@@ -1249,7 +1278,10 @@ input, select, textarea { font-family: inherit; }
   animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
 .cart-sidebar {
   position: fixed;
@@ -1448,7 +1480,7 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* ============================================
-   MODAL
+   MODALS
    ============================================ */
 .modal {
   display: none;
@@ -1478,8 +1510,14 @@ input, select, textarea { font-family: inherit; }
 }
 
 @keyframes modalSlide {
-  from { opacity: 0; transform: translateY(20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {
@@ -1516,9 +1554,7 @@ input, select, textarea { font-family: inherit; }
   border-top: 1px solid var(--border-color);
 }
 
-/* ============================================
-   QUICK VIEW
-   ============================================ */
+/* QUICK VIEW */
 .quick-view-content {
   max-width: 820px;
 }
@@ -1556,7 +1592,7 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* ============================================
-   FORM ELEMENTS
+   FORMS
    ============================================ */
 .form-group {
   margin-bottom: 18px;
@@ -1586,7 +1622,6 @@ input, select, textarea { font-family: inherit; }
   border-color: var(--accent);
 }
 
-/* Phone input */
 .phone-input-wrap {
   display: flex;
   align-items: stretch;
@@ -1640,12 +1675,15 @@ input, select, textarea { font-family: inherit; }
   min-height: 1em;
 }
 
-.phone-hint.valid { color: var(--success); }
-.phone-hint.invalid { color: var(--danger); }
+.phone-hint.valid {
+  color: var(--success);
+}
 
-/* ============================================
-   SIZE GUIDE TABLE
-   ============================================ */
+.phone-hint.invalid {
+  color: var(--danger);
+}
+
+/* SIZE GUIDE */
 .size-table {
   width: 100%;
   border-collapse: collapse;
@@ -1718,12 +1756,15 @@ input, select, textarea { font-family: inherit; }
 body.dark-mode .order-card.order-status-new {
   background: linear-gradient(to left, var(--card-bg) 85%, #3a2a1a 85%);
 }
+
 body.dark-mode .order-card.order-status-processing {
   background: linear-gradient(to left, var(--card-bg) 85%, #1a2a3a 85%);
 }
+
 body.dark-mode .order-card.order-status-completed {
   background: linear-gradient(to left, var(--card-bg) 85%, #1a3a2a 85%);
 }
+
 body.dark-mode .order-card.order-status-cancelled {
   background: linear-gradient(to left, var(--card-bg) 85%, #3a1a1a 85%);
 }
@@ -1983,7 +2024,7 @@ footer {
 }
 
 /* ============================================
-   WHATSAPP FAB
+   FABs & SCROLL
    ============================================ */
 .whatsapp-fab {
   position: fixed;
@@ -2012,9 +2053,6 @@ body.admin-open .whatsapp-fab {
   display: none !important;
 }
 
-/* ============================================
-   SCROLL TO TOP
-   ============================================ */
 .scroll-top {
   position: fixed;
   bottom: 30px;
@@ -2044,9 +2082,7 @@ body.admin-open .whatsapp-fab {
   transform: translateY(-3px);
 }
 
-/* ============================================
-   TOAST
-   ============================================ */
+/* TOAST */
 .toast-msg {
   position: fixed;
   bottom: 100px;
@@ -2327,7 +2363,7 @@ body.admin-open .whatsapp-fab {
   background: var(--card-bg);
 }
 
-/* تنسيقات تقييمات الأدمن */
+/* ADMIN REVIEWS */
 .admin-review-card {
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -2367,7 +2403,6 @@ body.admin-open .whatsapp-fab {
 /* ============================================
    RESPONSIVE - Tab, Mobile, Small Phones
    ============================================ */
-
 @media (min-width: 1400px) {
   .container { max-width: 1400px; }
   .hero-title { font-size: 4.5rem; }
@@ -2384,20 +2419,19 @@ body.admin-open .whatsapp-fab {
   .nav-btn { padding: 8px 12px; font-size: 0.85rem; }
 }
 
-/* ============================================
-   إصلاح الموبايل والقائمة الجانبية
-   ============================================ */
 @media (max-width: 768px) {
-  /* Navbar */
-  .navbar-inner { padding: 12px 15px; gap: 10px; }
-  .menu-toggle { display: flex; }
+  /* Navbar Reordering */
+  .navbar-inner { padding: 12px 15px; gap: 10px; flex-wrap: nowrap; }
+  .menu-toggle { display: flex; order: 1; }
+  .logo { order: 2; margin-right: 10px; }
+  .nav-actions { order: 3; margin-right: auto; gap: 4px; }
   
   /* Drawer Menu */
   .nav-links {
     position: fixed;
     top: 0;
     left: -100%;
-    width: 280px !important; /* عرض ثابت */
+    width: 280px !important;
     max-width: 85vw !important;
     height: 100vh;
     background: var(--card-bg);
@@ -2406,28 +2440,21 @@ body.admin-open .whatsapp-fab {
     justify-content: flex-start;
     padding-top: 80px;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 10000 !important; /* فوق أي حاجة */
+    z-index: 99999 !important;
   }
+  .nav-links.active { left: 0; }
   
-  .nav-links.active {
-    left: 0;
-  }
-  
-  /* الطبقة السوداء بدون Blur */
+  /* Overlay بدون Blur */
   .nav-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 9999 !important;
+    z-index: 99998 !important;
     display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
-  .nav-overlay.active {
-    display: block;
-    opacity: 1;
-  }
+  .nav-overlay.active { display: block; opacity: 1; }
   
   .nav-btn {
     width: 100%;
@@ -2436,11 +2463,11 @@ body.admin-open .whatsapp-fab {
     justify-content: flex-start;
     border-bottom: 1px solid var(--border-color);
     font-size: 1rem;
-    color: var(--text-color);
+    color: var(--text-color) !important;
     position: relative;
-    z-index: 10001 !important;
+    z-index: 100000 !important;
+    pointer-events: auto !important;
   }
-  
   .nav-btn::after { display: none; }
   
   /* Hero */
