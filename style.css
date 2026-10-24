@@ -2445,3 +2445,75 @@ body.admin-open .whatsapp-fab {
   .stars .star { font-size: 0.6rem; }
   .logo h2 { font-size: 1.3rem; }
 }
+/* ==========================================
+   FIX ADMIN SCROLL & MOBILE MENU WIDTH & REVIEWS
+   ========================================== */
+
+/* 1. منع سكرول الموقع الأساسي لما الأدمن يفتح */
+body.admin-open {
+  overflow: hidden !important;
+}
+
+/* 2. القائمة في الموبايل مش هتاخد الشاشة كلها */
+@media (max-width: 768px) {
+  .nav-links {
+    width: 280px !important; /* عرض ثابت */
+    max-width: 85vw !important; 
+  }
+}
+
+/* 3. تنسيقات الردود والتقييمات */
+.reply-item.store-reply {
+  background: rgba(201, 169, 97, 0.1);
+  border-right: 3px solid var(--accent);
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.store-badge {
+  background: var(--accent);
+  color: #1a1a1a;
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 800;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.admin-review-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: var(--card-bg);
+}
+
+.admin-reply-box {
+  background: var(--bg-soft);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-reply-box input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.admin-reply-box button {
+  background: var(--btn-primary);
+  color: var(--btn-primary-text);
+  border: none;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}

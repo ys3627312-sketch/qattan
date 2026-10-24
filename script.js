@@ -512,7 +512,7 @@ window.__quickViewGo = function(id) {
 };
 
 // =====================================================
-// صفحة تفاصيل المنتج
+// صفحة تفاصيل المنتج (مع التقييمات الجديدة)
 // =====================================================
 function showProductDetails(id) {
   const p = products.find(x => x.id === id);
@@ -536,7 +536,6 @@ function showProductDetails(id) {
   renderProductDetails(id);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   
-  // تحديث التاريخ لصفحة المنتج
   window.history.pushState({ page: 'productDetails', id: id }, '', window.location.href);
 }
 
@@ -556,21 +555,36 @@ function renderProductDetails(id) {
   
   let reviewsHtml = '';
   if (p.ratings && p.ratings.length > 0) {
-    reviewsHtml = p.ratings.map(r => `
-      <div class="review-item">
-        <div class="review-header">
-          <div class="review-user">
-            <i class="fas fa-user-circle"></i>
-            <span>${escapeHtml(r.userName)}</span>
+    reviewsHtml = p.ratings.map(r => {
+      let repliesHtml = '';
+      if (r.replies && r.replies.length > 0) {
+        repliesHtml = r.replies.map(reply => `
+          <div class="reply-item store-reply">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+              <strong><span class="store-badge">إدارة المتجر</span> ${escapeHtml(reply.userName || 'المتجر')}</strong>
+            </div>
+            <p style="font-size:0.9rem; margin:0;">${escapeHtml(reply.text)}</p>
           </div>
-          <div class="review-stars">${renderStars(r.rating)}</div>
-          <div class="review-date">${new Date(r.date).toLocaleDateString('ar-EG')}</div>
+        `).join('');
+      }
+      
+      return `
+        <div class="review-item">
+          <div class="review-header">
+            <div class="review-user">
+              <i class="fas fa-user-circle"></i>
+              <span>${escapeHtml(r.userName)}</span>
+            </div>
+            <div class="review-stars">${renderStars(r.rating)}</div>
+            <div class="review-date">${new Date(r.date).toLocaleDateString('ar-EG')}</div>
+          </div>
+          ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
+          ${repliesHtml}
         </div>
-        ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
-      </div>
-    `).join('');
+      `;
+    }).join('');
   } else {
-    reviewsHtml = '<div class="no-reviews">لا توجد تقييمات بعد</div>';
+    reviewsHtml = '<div class="no-reviews">لا توجد تقييمات بعد، كن أول من يقيم!</div>';
   }
   
   container.innerHTML = `
@@ -1210,16 +1224,18 @@ function showAdminLoginModal() {
 }
 
 // =====================================================
-// Admin — Dashboard (نفس الكود القديم)
+// Admin — Dashboard
 // =====================================================
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.remove('admin-open');
+  document.body.style.overflow = ''; // إرجاع السكرول
 }
 
 function showAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.add('admin-open');
+  document.body.style.overflow = 'hidden'; // منع السكرول في الخلفية
   
   const overlay = document.createElement('div');
   overlay.className = 'admin-panel-overlay show';
@@ -1235,6 +1251,7 @@ function showAdminDashboard() {
         <button class="admin-tab-btn" data-tab="products"><i class="fas fa-tshirt"></i> المنتجات</button>
         <button class="admin-tab-btn" data-tab="offers"><i class="fas fa-tags"></i> العروض</button>
         <button class="admin-tab-btn" data-tab="orders"><i class="fas fa-shopping-bag"></i> الطلبات</button>
+        <button class="admin-tab-btn" data-tab="reviews"><i class="fas fa-comments"></i> التقييمات</button>
       </div>
       
       <div id="tab-store" class="admin-tab-content active-tab">
@@ -1347,6 +1364,14 @@ function showAdminDashboard() {
           <div id="ordersListAdmin"></div>
         </div>
       </div>
+
+      <div id="tab-reviews" class="admin-tab-content">
+        <div class="admin-section">
+          <h3><i class="fas fa-comments"></i> تقييمات العملاء</h3>
+          <div id="reviewsListAdmin"></div>
+        </div>
+      </div>
+      
     </div>
   `;
   document.body.appendChild(overlay);
@@ -1356,6 +1381,7 @@ function showAdminDashboard() {
     signOut(auth).catch(() => {});
     isAdminLoggedIn = false;
     document.body.classList.remove('admin-logged-in');
+    document.body.style.overflow = ''; // إرجاع السكرول
   };
   
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -1369,6 +1395,7 @@ function showAdminDashboard() {
       if (tab === 'products') renderProductsAdmin();
       if (tab === 'offers') { renderOffersAdmin(); populateOfferProductSelect(); }
       if (tab === 'orders') renderOrdersAdmin();
+      if (tab === 'reviews') renderReviewsAdmin();
     });
   });
   
@@ -1595,6 +1622,81 @@ function showAdminDashboard() {
       renderOrdersAdmin();
     };
   });
+
+  // ✅ دالة عرض التقييمات في لوحة التحكم
+  function renderReviewsAdmin() {
+    const cont = overlay.querySelector('#reviewsListAdmin');
+    if (!cont) return;
+    
+    let allReviews = [];
+    products.forEach(p => {
+      if (p.ratings && p.ratings.length > 0) {
+        p.ratings.forEach((r, idx) => {
+          allReviews.push({ productId: p.id, productName: p.name, reviewIdx: idx, review: r });
+        });
+      }
+    });
+    
+    if (allReviews.length === 0) {
+      cont.innerHTML = '<p style="text-align:center; padding:20px;">لا توجد تقييمات حتى الآن</p>';
+      return;
+    }
+    
+    allReviews.sort((a, b) => new Date(b.review.date) - new Date(a.review.date));
+    
+    cont.innerHTML = allReviews.map(item => {
+      const repliesHtml = (item.review.replies && item.review.replies.length > 0) ? item.review.replies.map(reply => `
+        <div class="reply-item store-reply" style="margin-bottom:8px;">
+          <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">المتجر (إدارة):</strong>
+          <span style="font-size:0.9rem;">${escapeHtml(reply.text)}</span>
+        </div>
+      `).join('') : '';
+      
+      return `
+        <div class="admin-review-card">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <strong style="color:var(--accent);">${escapeHtml(item.productName)}</strong>
+            <span style="font-size:0.75rem; opacity:0.6;">${new Date(item.review.date).toLocaleDateString('ar-EG')}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(item.review.userName)}</span>
+            <div class="stars">${renderStars(item.review.rating)}</div>
+          </div>
+          ${item.review.comment ? `<p style="font-size:0.9rem; margin-bottom:10px; color:var(--text-soft);">${escapeHtml(item.review.comment)}</p>` : ''}
+          
+          ${repliesHtml}
+          
+          <div class="admin-reply-box">
+            <input type="text" placeholder="اكتب ردك هنا..." class="admin-reply-input" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">
+            <button class="admin-reply-btn" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">رد</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    cont.querySelectorAll('.admin-reply-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const pid = parseInt(btn.dataset.pid);
+        const ridx = parseInt(btn.dataset.ridx);
+        const input = cont.querySelector(`.admin-reply-input[data-pid="${pid}"][data-ridx="${ridx}"]`);
+        const text = input?.value.trim();
+        
+        if (!text) { showToast('أدخل نص الرد'); return; }
+        
+        const product = products.find(p => p.id === pid);
+        if (product && product.ratings && product.ratings[ridx]) {
+          if (!product.ratings[ridx].replies) product.ratings[ridx].replies = [];
+          product.ratings[ridx].replies.push({ text, userName: "المتجر", date: new Date().toISOString() });
+          
+          btn.disabled = true;
+          btn.textContent = '...';
+          await saveStoreData();
+          renderReviewsAdmin();
+          showToast('تم إضافة الرد بنجاح');
+        }
+      };
+    });
+  }
   
   renderProductsAdmin();
   populateOfferProductSelect();
