@@ -70,6 +70,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   font-size: 16px;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 img { max-width: 100%; height: auto; display: block; }
@@ -1133,6 +1134,26 @@ input, select, textarea { font-family: inherit; }
   font-size: 0.92rem;
   color: var(--text-soft);
   line-height: 1.7;
+}
+
+/* الردود على التقييمات */
+.reply-item.store-reply {
+  background: rgba(201, 169, 97, 0.1);
+  border-right: 3px solid var(--accent);
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.store-badge {
+  background: var(--accent);
+  color: #1a1a1a;
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 800;
+  margin-right: 6px;
+  display: inline-block;
 }
 
 .add-review-form {
@@ -2306,6 +2327,43 @@ body.admin-open .whatsapp-fab {
   background: var(--card-bg);
 }
 
+/* تنسيقات تقييمات الأدمن */
+.admin-review-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: var(--card-bg);
+}
+
+.admin-reply-box {
+  background: var(--bg-soft);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-reply-box input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.admin-reply-box button {
+  background: var(--btn-primary);
+  color: var(--btn-primary-text);
+  border: none;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ============================================
    RESPONSIVE - Tab, Mobile, Small Phones
    ============================================ */
@@ -2326,6 +2384,9 @@ body.admin-open .whatsapp-fab {
   .nav-btn { padding: 8px 12px; font-size: 0.85rem; }
 }
 
+/* ============================================
+   إصلاح الموبايل والقائمة الجانبية
+   ============================================ */
 @media (max-width: 768px) {
   /* Navbar */
   .navbar-inner { padding: 12px 15px; gap: 10px; }
@@ -2336,7 +2397,8 @@ body.admin-open .whatsapp-fab {
     position: fixed;
     top: 0;
     left: -100%;
-    width: 280px;
+    width: 280px !important; /* عرض ثابت */
+    max-width: 85vw !important;
     height: 100vh;
     background: var(--card-bg);
     box-shadow: 4px 0 15px rgba(0,0,0,0.1);
@@ -2344,18 +2406,19 @@ body.admin-open .whatsapp-fab {
     justify-content: flex-start;
     padding-top: 80px;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 9999;
+    z-index: 10000 !important; /* فوق أي حاجة */
   }
   
   .nav-links.active {
     left: 0;
   }
   
+  /* الطبقة السوداء بدون Blur */
   .nav-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 9998;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999 !important;
     display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -2373,6 +2436,9 @@ body.admin-open .whatsapp-fab {
     justify-content: flex-start;
     border-bottom: 1px solid var(--border-color);
     font-size: 1rem;
+    color: var(--text-color);
+    position: relative;
+    z-index: 10001 !important;
   }
   
   .nav-btn::after { display: none; }
@@ -2444,70 +2510,8 @@ body.admin-open .whatsapp-fab {
   .stars .star { font-size: 0.6rem; }
   .logo h2 { font-size: 1.3rem; }
 }
-/* ==========================================
-   FIX ADMIN SCROLL & MOBILE MENU WIDTH & REVIEWS
-   ========================================== */
 
-/* 2. القائمة في الموبايل مش هتاخد الشاشة كلها */
-@media (max-width: 768px) {
-  .nav-links {
-    width: 280px !important; /* عرض ثابت */
-    max-width: 85vw !important; 
-  }
-}
-
-/* 3. تنسيقات الردود والتقييمات */
-.reply-item.store-reply {
-  background: rgba(201, 169, 97, 0.1);
-  border-right: 3px solid var(--accent);
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 8px;
-}
-
-.store-badge {
-  background: var(--accent);
-  color: #1a1a1a;
-  font-size: 0.65rem;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-weight: 800;
-  margin-right: 6px;
-  display: inline-block;
-}
-
-.admin-review-card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-  background: var(--card-bg);
-}
-
-.admin-reply-box {
-  background: var(--bg-soft);
-  padding: 12px;
-  border-radius: 8px;
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-.admin-reply-box input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--text-color);
-}
-
-.admin-reply-box button {
-  background: var(--btn-primary);
-  color: var(--btn-primary-text);
-  border: none;
-  padding: 0 20px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
+/* منع سكرول الموقع لما الأدمن يفتح */
+body.admin-open {
+  overflow: hidden !important;
 }

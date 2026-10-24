@@ -512,7 +512,7 @@ window.__quickViewGo = function(id) {
 };
 
 // =====================================================
-// صفحة تفاصيل المنتج (مع التقييمات الجديدة)
+// صفحة تفاصيل المنتج
 // =====================================================
 function showProductDetails(id) {
   const p = products.find(x => x.id === id);
@@ -1229,7 +1229,7 @@ function showAdminLoginModal() {
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.remove('admin-open');
-  document.body.style.overflow = 'auto'; 
+  document.body.style.overflow = 'auto'; // إرجاع السكرول
 }
 
 function showAdminDashboard() {
@@ -1381,7 +1381,7 @@ function showAdminDashboard() {
     signOut(auth).catch(() => {});
     isAdminLoggedIn = false;
     document.body.classList.remove('admin-logged-in');
-    document.body.style.overflow = 'auto'; 
+    document.body.style.overflow = 'auto';
   };
   
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -1706,7 +1706,8 @@ function showAdminDashboard() {
 // Init
 // =====================================================
 async function init() {
-  document.body.style.overflow = 'auto';
+  document.body.style.overflow = 'auto'; // ضمان السكرول في البداية
+  
   loadLocalState();
   setupDarkMode();
   setupPhoneInput();
@@ -1740,7 +1741,7 @@ async function init() {
   function closeMobileMenu() {
     navLinks?.classList.remove('active');
     navOverlay.classList.remove('active');
-    document.body.style.overflow = '';
+    document.body.style.overflow = 'auto';
   }
 
   menuToggle?.addEventListener('click', openMobileMenu);
