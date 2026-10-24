@@ -1754,42 +1754,62 @@ async function init() {
   // =====================================================
   // إعداد القائمة الجانبية وزرار الرجوع
   // =====================================================
+  // =====================================================
+  // إعداد القائمة الجانبية وزرار الرجوع (حل نضيف)
+  // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
-  const navOverlay = document.createElement('div');
-  navOverlay.className = 'nav-overlay';
-  document.body.appendChild(navOverlay);
-
-  function closeMobileMenu() {
-    navLinks?.classList.remove('active');
-    navOverlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
+  
+  // إنشاء طبقة سوداء ورا القائمة
+  let navOverlay = document.querySelector('.nav-overlay');
+  if (!navOverlay) {
+    navOverlay = document.createElement('div');
+    navOverlay.className = 'nav-overlay';
+    document.body.appendChild(navOverlay);
   }
 
-  menuToggle?.addEventListener('click', (e) => {
-    e.preventDefault();
-    navLinks?.classList.add('active');
-    navOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
+  // دالة إغلاق القائمة
+  function closeMobileMenu() {
+    if (navLinks) navLinks.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
 
-  navOverlay.addEventListener('click', closeMobileMenu);
+  // دالة فتح القائمة
+  if (menuToggle) {
+    menuToggle.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (navLinks) navLinks.classList.add('active');
+      if (navOverlay) navOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    };
+  }
 
+  // إغلاق القائمة لما تدوس على الخلفية السودا
+  if (navOverlay) {
+    navOverlay.onclick = closeMobileMenu;
+  }
+
+  // دالة التنقل بين الصفحات
   function navigateToPage(pageId) {
     showPage(pageId);
     closeMobileMenu();
     window.history.pushState({ page: pageId }, '', window.location.href);
   }
 
+  // ربط زراير القائمة بالتنقل
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.onclick = function(e) {
       e.preventDefault();
+      e.stopPropagation();
       navigateToPage(btn.dataset.page);
-    });
+    };
   });
 
+  // التعامل مع زرار الرجوع في المتصفح
   window.addEventListener('popstate', (e) => {
-    if (navLinks?.classList.contains('active')) {
+    if (navLinks && navLinks.classList.contains('active')) {
       closeMobileMenu();
       return;
     }
@@ -1800,13 +1820,14 @@ async function init() {
       showPage('home');
     }
     
-    const currentPage = e.state?.page || 'home';
+    const currentPage = (e.state && e.state.page) ? e.state.page : 'home';
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.page === currentPage);
     });
   });
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
+  // =====================================================
   // =====================================================
   
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {

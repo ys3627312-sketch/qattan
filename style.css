@@ -2505,3 +2505,86 @@ body.admin-open .whatsapp-fab {
 body.admin-open {
   overflow: hidden !important;
 }
+
+/* ============================================
+   الحل الجذري للقائمة في الموبايل
+   ============================================ */
+@media (max-width: 768px) {
+  .navbar-inner {
+    padding: 12px 15px !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .menu-toggle {
+    display: flex !important;
+    order: 1 !important;
+    z-index: 100 !important;
+  }
+  
+  .logo {
+    order: 2 !important;
+    margin-right: 10px !important;
+  }
+  
+  .nav-actions {
+    order: 3 !important;
+    margin-right: auto !important;
+    gap: 4px !important;
+    z-index: 100 !important;
+  }
+  
+  .nav-links {
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    background: var(--card-bg) !important;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.15) !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    padding-top: 80px !important;
+    transition: left 0.3s ease !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .nav-links.active {
+    left: 0 !important;
+  }
+  
+  .nav-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 99998 !important;
+    display: none !important;
+    backdrop-filter: none !important;
+  }
+  
+  .nav-overlay.active {
+    display: block !important;
+  }
+  
+  .nav-btn {
+    width: 100% !important;
+    padding: 18px 24px !important;
+    border-radius: 0 !important;
+    justify-content: flex-start !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    font-size: 1rem !important;
+    color: var(--text-color) !important;
+    position: relative !important;
+    z-index: 100000 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+  
+  .nav-btn::after {
+    display: none !important;
+  }
+}
