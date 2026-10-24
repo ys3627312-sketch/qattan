@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>قطان | ملابس بجودة عالية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="responsive.css">
+  <style>
+    html { background: #faf8f3; }
+    @keyframes spinLoader { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body style="visibility: hidden;">
+
+<div id="pageLoader" style="position:fixed;inset:0;background:#faf8f3;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;">
+  <div style="width:60px;height:60px;border:5px solid #e8dcc8;border-top-color:#1a1a1a;border-radius:50%;animation:spinLoader 0.8s linear infinite;"></div>
+  <p style="font-family:Cairo,sans-serif;color:#1a1a1a;font-weight:700;font-size:1rem;">جاري التحميل...</p>
+</div>
+
+<!-- NAVBAR -->
+<div class="navbar" id="mainNavbar">
+  <div class="navbar-inner">
+    <button class="menu-toggle" id="menuToggle" aria-label="القائمة">
+      <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="logo" id="logoLink">
+      <h2 id="storeName">قطان</h2>
+      <span class="brand-tag">QATTAN</span>
+    </div>
+
+    <div class="nav-links">
+      <button class="nav-btn active" data-page="home"><span>المنتجات</span></button>
+      <button class="nav-btn" data-page="new"><span>وصل حديثاً</span></button>
+      <button class="nav-btn" data-page="offers"><span>العروض</span></button>
+      <button class="nav-btn" data-page="favorites"><span>المفضلة</span></button>
+      <button class="nav-btn" data-page="orders"><span>طلباتي</span></button>
+    </div>
+
+    <div class="nav-actions">
+      <button class="icon-btn" id="adminLoginBtn" type="button" aria-label="لوحة التحكم">
+        <i class="fas fa-cog"></i>
+      </button>
+      <button class="icon-btn dark-mode-toggle" id="darkModeToggle" type="button" aria-label="الوضع الليلي">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="icon-btn cart-icon" id="cartIcon" aria-label="السلة">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="homePage" class="page active-page">
+    
+    <section class="hero">
+      <div class="hero-content">
+        <p class="hero-eyebrow">مجموعة 2025</p>
+        <h1 class="hero-title">أناقة بلا مجهود</h1>
+        <p class="hero-subtitle">ملابس مختارة بعناية لتناسب كل لحظة في يومك. جودة عالية، أسعار مناسبة، وتوصيل لكل مكان.</p>
+        <div class="hero-actions">
+          <button class="btn-primary" id="heroShopBtn">تسوق الآن</button>
+          <button class="btn-outline" id="heroNewBtn">وصل حديثاً</button>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80" alt="مجموعة قطان">
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">وصل حديثاً</h2>
+        <a href="#" class="section-link" data-page="new">عرض الكل <i class="fas fa-arrow-left"></i></a>
+      </div>
+      <div id="newArrivalsContainer" class="featured-grid"></div>
+    </section>
+
+    <section class="section">
+      <div class="filter-bar">
+        <div class="categories-row">
+          <button class="cat-pill active-cat" data-cat="men">رجالي</button>
+          <button class="cat-pill" data-cat="women">حريمي</button>
+          <button class="cat-pill" data-cat="kids">ولادي</button>
+          <button class="cat-pill" data-cat="all">الكل</button>
+        </div>
+        <div class="filter-actions">
+          <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="search" id="menuSearch" placeholder="ابحث..." autocomplete="off">
+          </div>
+          <select id="sortSelect" class="sort-select">
+            <option value="default">ترتيب افتراضي</option>
+            <option value="price-low">الأرخص أولاً</option>
+            <option value="price-high">الأغلى أولاً</option>
+            <option value="rating">الأعلى تقييماً</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title" id="currentCategoryTitle">رجالي</h2>
+        <span class="results-count" id="resultsCount">0 منتج</span>
+      </div>
+      <div id="itemsContainer" class="products-grid"></div>
+    </section>
+  </div>
+
+  <div id="newPage" class="page">
+    <div class="page-header">
+      <h1 class="page-title">وصل حديثاً</h1>
+      <p class="page-subtitle">أحدث الإضافات لمجموعتنا</p>
+    </div>
+    <div id="newItemsContainer" class="products-grid"></div>
+  </div>
+
+  <div id="offersPage" class="page">
+    <div class="page-header">
+      <h1 class="page-title">العروض</h1>
+      <p class="page-subtitle">استفد من خصوماتنا الحصرية</p>
+    </div>
+    <div id="offersContainer" class="offers-grid"></div>
+  </div>
+
+  <div id="favoritesPage" class="page">
+    <div class="page-header">
+      <h1 class="page-title">المفضلة</h1>
+      <p class="page-subtitle">المنتجات اللي عجبتك</p>
+    </div>
+    <div id="favoritesContainer" class="products-grid"></div>
+  </div>
+
+  <div id="ordersPage" class="page">
+    <div class="page-header">
+      <h1 class="page-title">طلباتي</h1>
+      <p class="page-subtitle">تابع طلباتك من هنا</p>
+    </div>
+    <div class="orders-actions">
+      <button id="refreshOrdersBtn" class="btn-outline"><i class="fas fa-sync-alt"></i> تحديث الحالات</button>
+    </div>
+    <div id="completedOrdersList" class="orders-list"></div>
+  </div>
+
+  <div id="productDetailsPage" class="page">
+    <div class="breadcrumbs" id="breadcrumbs">
+      <a href="#" data-page="home">الرئيسية</a>
+      <i class="fas fa-chevron-left"></i>
+      <span id="breadcrumbCategory">رجالي</span>
+      <i class="fas fa-chevron-left"></i>
+      <span id="breadcrumbProduct">منتج</span>
+    </div>
+    <div id="productDetailsContent" class="product-details-container"></div>
+  </div>
+</div>
+
+<div id="cartOverlay" class="cart-overlay"></div>
+<div id="cartSidebar" class="cart-sidebar">
+  <div class="cart-header">
+    <h3><i class="fas fa-shopping-bag"></i> سلة المشتريات</h3>
+    <button class="close-cart" id="closeCartBtn" aria-label="إغلاق"><i class="fas fa-times"></i></button>
+  </div>
+  <div id="cartItemsList" class="cart-items">
+    <div class="empty-state"><i class="fas fa-shopping-basket"></i><p>سلة فارغة</p></div>
+  </div>
+  <div class="cart-footer">
+    <div class="total-price" id="cartTotal">الإجمالي: 0 ج.م</div>
+    <button id="confirmOrderBtn" class="btn-checkout"><i class="fas fa-arrow-left"></i> إتمام الطلب</button>
+    <button id="clearCartBtn" class="btn-clear"><i class="fas fa-trash-alt"></i> تفريغ السلة</button>
+  </div>
+</div>
+
+<div id="quickViewModal" class="modal">
+  <div class="modal-content quick-view-content">
+    <div class="modal-header">
+      <h3>عرض سريع</h3>
+      <span class="modal-close" id="closeQuickViewBtn">&times;</span>
+    </div>
+    <div id="quickViewBody" class="quick-view-body"></div>
+  </div>
+</div>
+
+<div id="sizeGuideModal" class="modal">
+  <div class="modal-content" style="max-width:600px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-ruler"></i> دليل المقاسات</h3>
+      <span class="modal-close" id="closeSizeGuideBtn">&times;</span>
+    </div>
+    <div class="modal-body">
+      <table class="size-table">
+        <thead>
+          <tr>
+            <th>المقاس</th>
+            <th>الصدر (سم)</th>
+            <th>الوسط (سم)</th>
+            <th>الطول (سم)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>XS</td><td>84</td><td>66</td><td>64</td></tr>
+          <tr><td>S</td><td>88</td><td>70</td><td>66</td></tr>
+          <tr><td>M</td><td>92</td><td>74</td><td>68</td></tr>
+          <tr><td>L</td><td>96</td><td>78</td><td>70</td></tr>
+          <tr><td>XL</td><td>100</td><td>82</td><td>72</td></tr>
+          <tr><td>XXL</td><td>104</td><td>86</td><td>74</td></tr>
+        </tbody>
+      </table>
+      <p style="text-align:center;margin-top:15px;font-size:0.85rem;opacity:0.7;">القياسات تقريبية وقد تختلف من منتج لآخر</p>
+    </div>
+  </div>
+</div>
+
+<div id="orderModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3><i class="fas fa-clipboard-list"></i> بيانات الطلب</h3>
+      <span class="modal-close" id="closeOrderModalBtn">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="customerName" class="modal-input" placeholder="أدخل اسمك" required>
+      </div>
+      <div class="form-group">
+        <label>رقم الهاتف</label>
+        <div class="phone-input-wrap">
+          <span class="phone-prefix">+20</span>
+          <input type="tel" id="customerPhone" class="modal-input phone-input" placeholder="1X XXXX XXXX" inputmode="numeric" maxlength="13" required>
+        </div>
+        <div class="phone-hint" id="phoneHint"></div>
+      </div>
+      <div class="form-group">
+        <label>المنطقة</label>
+        <select id="city" class="modal-input" required>
+          <option value="">اختر المنطقة</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>العنوان بالتفصيل</label>
+        <textarea id="customerAddress" class="modal-input" rows="2" placeholder="الشارع، رقم العمارة، الشقة" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>طريقة الدفع</label>
+        <select id="paymentMethod" class="modal-input">
+          <option value="كاش عند الاستلام">كاش عند الاستلام</option>
+          <option value="محفظة إلكترونية">محفظة إلكترونية</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ملاحظات (اختياري)</label>
+        <textarea id="customerNotes" class="modal-input" rows="2" placeholder="أي تفاصيل إضافية"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="sendWhatsAppBtn" class="btn-checkout"><i class="fab fa-whatsapp"></i> إرسال الطلب</button>
+    </div>
+  </div>
+</div>
+
+<div id="customConfirmModal" class="custom-confirm">
+  <div class="custom-confirm-content">
+    <i class="fas fa-question-circle"></i>
+    <p id="confirmMessage">هل أنت متأكد؟</p>
+    <div class="custom-confirm-buttons">
+      <button id="confirmYesBtn" class="confirm-yes">نعم</button>
+      <button id="confirmNoBtn" class="confirm-no">لا</button>
+    </div>
+  </div>
+</div>
+
+<footer id="mainFooter">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <h3>قطان</h3>
+      <p>ملابس بجودة عالية، مختارة بعناية</p>
+    </div>
+    <div class="footer-info">
+      <p><i class="fas fa-map-marker-alt"></i> <span id="storeAddress">القاهرة</span></p>
+      <p><i class="fas fa-phone"></i> <span id="footerPhone">01225889925</span></p>
+      <p><i class="fas fa-clock"></i> <span id="workingHours">١٠ ص — ١٠ م</span></p>
+    </div>
+    <div class="footer-bottom">
+      <p id="footerText">© 2025 قطان | جميع الحقوق محفوظة</p>
+    </div>
+  </div>
+</footer>
+
+<a href="#" id="whatsappFab" class="whatsapp-fab" target="_blank" rel="noopener" title="تواصل معنا">
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+<button class="scroll-top" id="scrollTopBtn" aria-label="العودة للأعلى">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<audio id="successSound" preload="auto">
+  <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+</audio>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
