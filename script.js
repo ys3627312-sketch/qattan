@@ -535,6 +535,9 @@ function showProductDetails(id) {
   
   renderProductDetails(id);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  // تحديث التاريخ لصفحة المنتج
+  window.history.pushState({ page: 'productDetails', id: id }, '', window.location.href);
 }
 
 function renderProductDetails(id) {
@@ -1123,7 +1126,6 @@ function showAdminLoginModal() {
   const existing = document.getElementById('adminLoginModal');
   if (existing) existing.remove();
   
-  // تحميل الإيميل المحفوظ لو موجود
   const savedEmail = localStorage.getItem('qattan_savedEmail') || '';
   
   const modal = document.createElement('div');
@@ -1178,12 +1180,8 @@ function showAdminLoginModal() {
     try {
       const cred = await signInWithEmailAndPassword(auth, em, pw);
       if (cred.user.email === ADMIN_EMAIL) {
-        // حفظ أو مسح الإيميل حسب تذكرني
-        if (remember.checked) {
-          localStorage.setItem('qattan_savedEmail', em);
-        } else {
-          localStorage.removeItem('qattan_savedEmail');
-        }
+        if (remember.checked) localStorage.setItem('qattan_savedEmail', em);
+        else localStorage.removeItem('qattan_savedEmail');
         
         isAdminLoggedIn = true;
         document.body.classList.add('admin-logged-in');
@@ -1212,7 +1210,7 @@ function showAdminLoginModal() {
 }
 
 // =====================================================
-// Admin — Dashboard
+// Admin — Dashboard (نفس الكود القديم)
 // =====================================================
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
@@ -1221,9 +1219,10 @@ function closeAdminDashboard() {
 
 function showAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
+  document.body.classList.add('admin-open');
   
   const overlay = document.createElement('div');
-  overlay.className = 'admin-panel-overlay show'; // ضفنا كلاس show عشان تظهر
+  overlay.className = 'admin-panel-overlay show';
   overlay.innerHTML = `
     <div class="admin-dashboard">
       <div class="admin-top">
@@ -1352,7 +1351,6 @@ function showAdminDashboard() {
   `;
   document.body.appendChild(overlay);
   
-  // إغلاق اللوحة
   overlay.querySelector('#closeAdminDash').onclick = () => {
     overlay.remove();
     signOut(auth).catch(() => {});
@@ -1360,7 +1358,6 @@ function showAdminDashboard() {
     document.body.classList.remove('admin-logged-in');
   };
   
-  // التبويبات
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       overlay.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
@@ -1375,7 +1372,6 @@ function showAdminDashboard() {
     });
   });
   
-  // حفظ إعدادات المتجر
   overlay.querySelector('#saveStoreBtn').onclick = async () => {
     storeConfig.name = overlay.querySelector('#editName').value.trim();
     storeConfig.phone = overlay.querySelector('#editPhone').value.trim();
@@ -1392,7 +1388,6 @@ function showAdminDashboard() {
     showToast('تم حفظ الإعدادات');
   };
   
-  // رفع صورة
   let pendingImgData = null;
   overlay.querySelector('#uploadImgBtn').onclick = () => overlay.querySelector('#newImgFile').click();
   overlay.querySelector('#newImgFile').onchange = async (e) => {
@@ -1425,7 +1420,6 @@ function showAdminDashboard() {
     setTimeout(() => document.removeEventListener('paste', handler), 10000);
   };
   
-  // إضافة منتج
   overlay.querySelector('#addProductBtn').onclick = async () => {
     const name = overlay.querySelector('#newName').value.trim();
     const price = parseFloat(overlay.querySelector('#newPrice').value);
@@ -1466,7 +1460,6 @@ function showAdminDashboard() {
     showToast('تم إضافة المنتج');
   };
   
-  // إضافة عرض
   overlay.querySelector('#addOfferBtn').onclick = async () => {
     const title = overlay.querySelector('#newOfferTitle').value.trim();
     const pid = parseInt(overlay.querySelector('#newOfferProduct').value);
@@ -1487,7 +1480,6 @@ function showAdminDashboard() {
     showToast('تم إضافة العرض');
   };
   
-  // دوال عرض البيانات في الأدمن
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
     if (products.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; return; }
@@ -1604,10 +1596,10 @@ function showAdminDashboard() {
     };
   });
   
-  // التشغيل الأولي
   renderProductsAdmin();
   populateOfferProductSelect();
 }
+
 // =====================================================
 // Init
 // =====================================================
@@ -1618,7 +1610,6 @@ async function init() {
   populateAreas();
   setupScrollTop();
   
-  // Load from Firebase
   await loadStoreData();
   
   applyStoreConfig();
@@ -1627,25 +1618,78 @@ async function init() {
   renderCart();
   updateCartCount();
   
-  // Nav
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => showPage(btn.dataset.page));
-  });
-  document.getElementById('logoLink')?.addEventListener('click', () => showPage('home'));
+  // =====================================================
+  // إعداد القائمة الجانبية وزرار الرجوع (Routing)
+  // =====================================================
+  const navLinks = document.querySelector('.nav-links');
+  const menuToggle = document.getElementById('menuToggle');
   
+  const navOverlay = document.createElement('div');
+  navOverlay.className = 'nav-overlay';
+  document.body.appendChild(navOverlay);
+
+  function openMobileMenu() {
+    navLinks?.classList.add('active');
+    navOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileMenu() {
+    navLinks?.classList.remove('active');
+    navOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  menuToggle?.addEventListener('click', openMobileMenu);
+  navOverlay.addEventListener('click', closeMobileMenu);
+
+  function navigateToPage(pageId) {
+    showPage(pageId);
+    closeMobileMenu();
+    window.history.pushState({ page: pageId }, '', window.location.href);
+  }
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => navigateToPage(btn.dataset.page));
+  });
+
+  window.addEventListener('popstate', (e) => {
+    if (navLinks?.classList.contains('active')) {
+      closeMobileMenu();
+      return;
+    }
+    
+    if (e.state && e.state.page) {
+      showPage(e.state.page);
+    } else {
+      showPage('home');
+    }
+    
+    const currentPage = e.state?.page || 'home';
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.page === currentPage);
+    });
+  });
+
+  window.history.replaceState({ page: 'home' }, '', window.location.href);
+  
+  // =====================================================
+  // ربط باقي الأزرار
+  // =====================================================
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });
-  document.getElementById('heroNewBtn')?.addEventListener('click', () => showPage('new'));
+  document.getElementById('heroNewBtn')?.addEventListener('click', () => {
+    navigateToPage('new');
+  });
   
   document.querySelectorAll('.section-link[data-page]').forEach(l => {
-    l.addEventListener('click', (e) => { e.preventDefault(); showPage(l.dataset.page); });
+    l.addEventListener('click', (e) => { e.preventDefault(); navigateToPage(l.dataset.page); });
   });
   document.querySelectorAll('.breadcrumbs a[data-page]').forEach(l => {
-    l.addEventListener('click', (e) => { e.preventDefault(); showPage(l.dataset.page); });
+    l.addEventListener('click', (e) => { e.preventDefault(); navigateToPage(l.dataset.page); });
   });
   
-  // Categories
   document.querySelectorAll('.cat-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentCategory = btn.dataset.cat;
@@ -1666,7 +1710,6 @@ async function init() {
     renderProducts();
   });
   
-  // Cart
   document.getElementById('cartIcon')?.addEventListener('click', openCart);
   document.getElementById('closeCartBtn')?.addEventListener('click', closeCart);
   document.getElementById('cartOverlay')?.addEventListener('click', closeCart);
@@ -1708,12 +1751,6 @@ async function init() {
   
   setupAdminLogin();
   
-    // تفعيل زرار القائمة في الموبايل
-  document.getElementById('menuToggle')?.addEventListener('click', () => {
-    document.querySelector('.nav-links')?.classList.toggle('active');
-  });
-  
-  // Hide loader
   setTimeout(() => {
     const loader = document.getElementById('pageLoader');
     if (loader) {
