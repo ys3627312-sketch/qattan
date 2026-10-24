@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>قطان | ملابس بجودة عالية</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="responsive.css">
+
   <style>
     html { background: #faf8f3; }
     @keyframes spinLoader { to { transform: rotate(360deg); } }
@@ -22,7 +25,6 @@
   <p style="font-family:Cairo,sans-serif;color:#1a1a1a;font-weight:700;font-size:1rem;">جاري التحميل...</p>
 </div>
 
-<!-- NAVBAR -->
 <div class="navbar" id="mainNavbar">
   <div class="navbar-inner">
     <button class="menu-toggle" id="menuToggle" aria-label="القائمة">
@@ -59,7 +61,6 @@
 
 <div class="container">
   <div id="homePage" class="page active-page">
-    
     <section class="hero">
       <div class="hero-content">
         <p class="hero-eyebrow">مجموعة 2025</p>
@@ -196,14 +197,7 @@
     </div>
     <div class="modal-body">
       <table class="size-table">
-        <thead>
-          <tr>
-            <th>المقاس</th>
-            <th>الصدر (سم)</th>
-            <th>الوسط (سم)</th>
-            <th>الطول (سم)</th>
-          </tr>
-        </thead>
+        <thead><tr><th>المقاس</th><th>الصدر (سم)</th><th>الوسط (سم)</th><th>الطول (سم)</th></tr></thead>
         <tbody>
           <tr><td>XS</td><td>84</td><td>66</td><td>64</td></tr>
           <tr><td>S</td><td>88</td><td>70</td><td>66</td></tr>
@@ -213,7 +207,6 @@
           <tr><td>XXL</td><td>104</td><td>86</td><td>74</td></tr>
         </tbody>
       </table>
-      <p style="text-align:center;margin-top:15px;font-size:0.85rem;opacity:0.7;">القياسات تقريبية وقد تختلف من منتج لآخر</p>
     </div>
   </div>
 </div>
@@ -225,10 +218,7 @@
       <span class="modal-close" id="closeOrderModalBtn">&times;</span>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>الاسم الكامل</label>
-        <input type="text" id="customerName" class="modal-input" placeholder="أدخل اسمك" required>
-      </div>
+      <div class="form-group"><label>الاسم الكامل</label><input type="text" id="customerName" class="modal-input" placeholder="أدخل اسمك" required></div>
       <div class="form-group">
         <label>رقم الهاتف</label>
         <div class="phone-input-wrap">
@@ -237,31 +227,12 @@
         </div>
         <div class="phone-hint" id="phoneHint"></div>
       </div>
-      <div class="form-group">
-        <label>المنطقة</label>
-        <select id="city" class="modal-input" required>
-          <option value="">اختر المنطقة</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>العنوان بالتفصيل</label>
-        <textarea id="customerAddress" class="modal-input" rows="2" placeholder="الشارع، رقم العمارة، الشقة" required></textarea>
-      </div>
-      <div class="form-group">
-        <label>طريقة الدفع</label>
-        <select id="paymentMethod" class="modal-input">
-          <option value="كاش عند الاستلام">كاش عند الاستلام</option>
-          <option value="محفظة إلكترونية">محفظة إلكترونية</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>ملاحظات (اختياري)</label>
-        <textarea id="customerNotes" class="modal-input" rows="2" placeholder="أي تفاصيل إضافية"></textarea>
-      </div>
+      <div class="form-group"><label>المنطقة</label><select id="city" class="modal-input" required><option value="">اختر المنطقة</option></select></div>
+      <div class="form-group"><label>العنوان بالتفصيل</label><textarea id="customerAddress" class="modal-input" rows="2" placeholder="الشارع، رقم العمارة، الشقة" required></textarea></div>
+      <div class="form-group"><label>طريقة الدفع</label><select id="paymentMethod" class="modal-input"><option value="كاش عند الاستلام">كاش عند الاستلام</option><option value="محفظة إلكترونية">محفظة إلكترونية</option></select></div>
+      <div class="form-group"><label>ملاحظات (اختياري)</label><textarea id="customerNotes" class="modal-input" rows="2" placeholder="أي تفاصيل إضافية"></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button id="sendWhatsAppBtn" class="btn-checkout"><i class="fab fa-whatsapp"></i> إرسال الطلب</button>
-    </div>
+    <div class="modal-footer"><button id="sendWhatsAppBtn" class="btn-checkout"><i class="fab fa-whatsapp"></i> إرسال الطلب</button></div>
   </div>
 </div>
 
@@ -293,17 +264,10 @@
   </div>
 </footer>
 
-<a href="#" id="whatsappFab" class="whatsapp-fab" target="_blank" rel="noopener" title="تواصل معنا">
-  <i class="fab fa-whatsapp"></i>
-</a>
+<a href="#" id="whatsappFab" class="whatsapp-fab" target="_blank" rel="noopener" title="تواصل معنا"><i class="fab fa-whatsapp"></i></a>
+<button class="scroll-top" id="scrollTopBtn" aria-label="العودة للأعلى"><i class="fas fa-chevron-up"></i></button>
 
-<button class="scroll-top" id="scrollTopBtn" aria-label="العودة للأعلى">
-  <i class="fas fa-chevron-up"></i>
-</button>
-
-<audio id="successSound" preload="auto">
-  <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
-</audio>
+<audio id="successSound" preload="auto"><source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg"></audio>
 
 <script type="module" src="script.js"></script>
 </body>

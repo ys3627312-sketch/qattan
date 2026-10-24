@@ -99,15 +99,11 @@ function buildImageUrl(url, name) {
 // الحفظ والتحميل من localStorage
 // =====================================================
 function saveCart() {
-  try { 
-    localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart)); 
-  } catch(e) {} 
+  try { localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart)); } catch(e) {}
 }
 
 function saveFavorites() {
-  try { 
-    localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(favorites)); 
-  } catch(e) {} 
+  try { localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(favorites)); } catch(e) {}
 }
 
 function loadLocalState() {
@@ -134,15 +130,9 @@ async function loadStoreData() {
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data();
-      if (data.storeConfig) {
-        storeConfig = { ...DEFAULT_STORE_CONFIG, ...data.storeConfig };
-      }
-      if (Array.isArray(data.products)) {
-        products = data.products;
-      }
-      if (Array.isArray(data.offers)) {
-        offers = data.offers;
-      }
+      if (data.storeConfig) storeConfig = { ...DEFAULT_STORE_CONFIG, ...data.storeConfig };
+      if (Array.isArray(data.products)) products = data.products;
+      if (Array.isArray(data.offers)) offers = data.offers;
     }
   } catch (e) {
     console.error('loadStoreData error:', e);
@@ -176,7 +166,6 @@ async function loadOrdersFromFirebase(filterType) {
   try {
     const snap = await getDocs(collection(db, 'orders'));
     let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
-
     const now = new Date();
     
     if (filterType === 'today') {
@@ -198,13 +187,13 @@ async function loadOrdersFromFirebase(filterType) {
         return d >= monthAgo;
       });
     }
-
+    
     list.sort((a, b) => {
       const da = toDate(a.createdAt) || new Date(a.createdAtLocal || 0);
       const db_ = toDate(b.createdAt) || new Date(b.createdAtLocal || 0);
       return db_ - da;
     });
-
+    
     return list;
   } catch (e) {
     console.error('loadOrders error:', e);
@@ -945,7 +934,6 @@ async function sendOrder() {
     return;
   }
   
-  // رسالة واتساب
   let msg = `طلب جديد من ${storeConfig.name}\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
   cart.forEach(c => {
@@ -1115,6 +1103,7 @@ function setupPhoneInput() {
 // Areas
 // =====================================================
 const areas = ["مدينة نصر", "المعادي", "الدقي", "المهندسين", "الزمالك", "مصر الجديدة", "شبرا", "حلوان", "المقطم", "التجمع الخامس", "الشيخ زايد", "6 أكتوبر", "العبور", "عين شمس", "المطرية"];
+
 function populateAreas() {
   const select = document.getElementById('city');
   if (!select) return;
@@ -1283,6 +1272,7 @@ function showAdminDashboard() {
         <button class="admin-tab-btn" data-tab="reviews"><i class="fas fa-comments"></i> التقييمات</button>
       </div>
       
+      <!-- تبويب المعلومات -->
       <div id="tab-store" class="admin-tab-content active-tab">
         <div class="admin-section">
           <h3><i class="fas fa-store"></i> بيانات المتجر</h3>
@@ -1304,6 +1294,7 @@ function showAdminDashboard() {
         </div>
       </div>
       
+      <!-- تبويب المنتجات -->
       <div id="tab-products" class="admin-tab-content">
         <div class="admin-section">
           <h3><i class="fas fa-plus-circle"></i> إضافة منتج جديد</h3>
@@ -1355,6 +1346,7 @@ function showAdminDashboard() {
         </div>
       </div>
       
+      <!-- تبويب العروض -->
       <div id="tab-offers" class="admin-tab-content">
         <div class="admin-section">
           <h3><i class="fas fa-plus-circle"></i> إضافة عرض جديد</h3>
@@ -1381,6 +1373,7 @@ function showAdminDashboard() {
         </div>
       </div>
       
+      <!-- تبويب الطلبات -->
       <div id="tab-orders" class="admin-tab-content">
         <div class="admin-section">
           <h3><i class="fas fa-shopping-bag"></i> الطلبات الواردة</h3>
@@ -1394,6 +1387,7 @@ function showAdminDashboard() {
         </div>
       </div>
 
+      <!-- تبويب التقييمات -->
       <div id="tab-reviews" class="admin-tab-content">
         <div class="admin-section">
           <h3><i class="fas fa-comments"></i> تقييمات العملاء</h3>
@@ -1652,7 +1646,6 @@ function showAdminDashboard() {
     };
   });
 
-  // ✅ دالة عرض التقييمات في لوحة التحكم
   function renderReviewsAdmin() {
     const cont = overlay.querySelector('#reviewsListAdmin');
     if (!cont) return;
@@ -1754,62 +1747,42 @@ async function init() {
   // =====================================================
   // إعداد القائمة الجانبية وزرار الرجوع
   // =====================================================
-  // =====================================================
-  // إعداد القائمة الجانبية وزرار الرجوع (حل نضيف)
-  // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
-  
-  // إنشاء طبقة سوداء ورا القائمة
-  let navOverlay = document.querySelector('.nav-overlay');
-  if (!navOverlay) {
-    navOverlay = document.createElement('div');
-    navOverlay.className = 'nav-overlay';
-    document.body.appendChild(navOverlay);
-  }
+  const navOverlay = document.createElement('div');
+  navOverlay.className = 'nav-overlay';
+  document.body.appendChild(navOverlay);
 
-  // دالة إغلاق القائمة
   function closeMobileMenu() {
-    if (navLinks) navLinks.classList.remove('active');
-    if (navOverlay) navOverlay.classList.remove('active');
-    document.body.style.overflow = '';
+    navLinks?.classList.remove('active');
+    navOverlay.classList.remove('active');
+    document.body.style.overflow = 'auto';
   }
 
-  // دالة فتح القائمة
-  if (menuToggle) {
-    menuToggle.onclick = function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (navLinks) navLinks.classList.add('active');
-      if (navOverlay) navOverlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    };
-  }
+  menuToggle?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navLinks?.classList.add('active');
+    navOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
 
-  // إغلاق القائمة لما تدوس على الخلفية السودا
-  if (navOverlay) {
-    navOverlay.onclick = closeMobileMenu;
-  }
+  navOverlay.addEventListener('click', closeMobileMenu);
 
-  // دالة التنقل بين الصفحات
   function navigateToPage(pageId) {
     showPage(pageId);
     closeMobileMenu();
     window.history.pushState({ page: pageId }, '', window.location.href);
   }
 
-  // ربط زراير القائمة بالتنقل
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.onclick = function(e) {
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
       navigateToPage(btn.dataset.page);
-    };
+    });
   });
 
-  // التعامل مع زرار الرجوع في المتصفح
   window.addEventListener('popstate', (e) => {
-    if (navLinks && navLinks.classList.contains('active')) {
+    if (navLinks?.classList.contains('active')) {
       closeMobileMenu();
       return;
     }
@@ -1820,16 +1793,15 @@ async function init() {
       showPage('home');
     }
     
-    const currentPage = (e.state && e.state.page) ? e.state.page : 'home';
+    const currentPage = e.state?.page || 'home';
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.page === currentPage);
     });
   });
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
-  // =====================================================
-  // =====================================================
   
+  // ربط باقي الأزرار
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });

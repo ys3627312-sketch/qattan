@@ -1,6 +1,5 @@
 /* ============================================================
-   QATTAN — Fashion Store CSS
-   Light + Dark themes
+   QATTAN — Fashion Store CSS (Core)
    ============================================================ */
 
 :root {
@@ -51,9 +50,6 @@ body.dark-mode {
   --footer-text: #c9a961;
 }
 
-/* ============================================
-   RESET & BASE
-   ============================================ */
 * {
   margin: 0;
   padding: 0;
@@ -94,9 +90,7 @@ a {
   text-decoration: none;
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   font-family: inherit;
 }
 
@@ -524,7 +518,7 @@ textarea {
 }
 
 /* ============================================
-   PRODUCT GRID
+   PRODUCT GRID & CARD
    ============================================ */
 .products-grid,
 .featured-grid {
@@ -540,9 +534,6 @@ textarea {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
-/* ============================================
-   PRODUCT CARD
-   ============================================ */
 .product-card {
   position: relative;
   cursor: pointer;
@@ -792,7 +783,7 @@ textarea {
 }
 
 /* ============================================
-   EMPTY STATE
+   EMPTY STATE & BREADCRUMBS
    ============================================ */
 .empty-state {
   text-align: center;
@@ -812,9 +803,6 @@ textarea {
   font-size: 1rem;
 }
 
-/* ============================================
-   BREADCRUMBS
-   ============================================ */
 .breadcrumbs {
   display: flex;
   gap: 8px;
@@ -1962,7 +1950,7 @@ body.dark-mode .order-notes {
 }
 
 /* ============================================
-   FOOTER
+   FOOTER & FABs
    ============================================ */
 footer {
   background: var(--footer-bg);
@@ -2023,9 +2011,6 @@ footer {
   color: rgba(255,255,255,0.5);
 }
 
-/* ============================================
-   FABs & SCROLL
-   ============================================ */
 .whatsapp-fab {
   position: fixed;
   bottom: 30px;
@@ -2082,7 +2067,6 @@ body.admin-open .whatsapp-fab {
   transform: translateY(-3px);
 }
 
-/* TOAST */
 .toast-msg {
   position: fixed;
   bottom: 100px;
@@ -2363,7 +2347,6 @@ body.admin-open .whatsapp-fab {
   background: var(--card-bg);
 }
 
-/* ADMIN REVIEWS */
 .admin-review-card {
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -2398,193 +2381,4 @@ body.admin-open .whatsapp-fab {
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
-}
-
-/* ============================================
-   RESPONSIVE - Tab, Mobile, Small Phones
-   ============================================ */
-@media (min-width: 1400px) {
-  .container { max-width: 1400px; }
-  .hero-title { font-size: 4.5rem; }
-  .products-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  .product-image-wrap { height: 380px; }
-}
-
-@media (max-width: 1024px) {
-  .hero { gap: 30px; padding: 40px 0; }
-  .hero-title { font-size: 3rem; }
-  .product-image-wrap { height: 300px; }
-  .products-grid { grid-template-columns: repeat(3, 1fr); }
-  .nav-links { gap: 15px; }
-  .nav-btn { padding: 8px 12px; font-size: 0.85rem; }
-}
-
-@media (max-width: 768px) {
-  .navbar-inner {
-    padding: 12px 15px;
-    gap: 10px;
-    flex-wrap: nowrap;
-  }
-  
-  /* ترتيب العناصر */
-  .menu-toggle { display: flex; order: 1; z-index: 100; }
-  .logo { order: 2; margin-right: 10px; }
-  .nav-actions { order: 3; margin-right: auto; gap: 4px; z-index: 100; }
-  
-  /* القائمة الجانبية */
-  .nav-links {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    background: var(--card-bg);
-    box-shadow: 4px 0 15px rgba(0,0,0,0.15);
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-top: 80px;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 10000;
-    visibility: hidden;
-    opacity: 0;
-  }
-  
-  .nav-links.active {
-    transform: translateX(0);
-    visibility: visible;
-    opacity: 1;
-  }
-  
-  /* الخلفية السودا */
-  .nav-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9999;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .nav-overlay.active {
-    display: block;
-    opacity: 1;
-  }
-  
-  /* زراير القائمة */
-  .nav-btn {
-    width: 100%;
-    padding: 18px 24px;
-    border-radius: 0;
-    justify-content: flex-start;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 1rem;
-    color: var(--text-color);
-    z-index: 10001;
-    position: relative;
-    cursor: pointer;
-    pointer-events: auto;
-  }
-  
-  .nav-btn::after {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-title { font-size: 2rem; }
-  .product-image-wrap { height: 200px; }
-  .product-name { font-size: 0.85rem; }
-  .product-price { font-size: 0.9rem; }
-  .stars .star { font-size: 0.6rem; }
-  .logo h2 { font-size: 1.3rem; }
-}
-
-/* منع سكرول الموقع لما الأدمن يفتح */
-body.admin-open {
-  overflow: hidden !important;
-}
-
-/* ============================================
-   الحل الجذري للقائمة في الموبايل
-   ============================================ */
-@media (max-width: 768px) {
-  .navbar-inner {
-    padding: 12px 15px !important;
-    gap: 10px !important;
-    flex-wrap: nowrap !important;
-  }
-  
-  .menu-toggle {
-    display: flex !important;
-    order: 1 !important;
-    z-index: 100 !important;
-  }
-  
-  .logo {
-    order: 2 !important;
-    margin-right: 10px !important;
-  }
-  
-  .nav-actions {
-    order: 3 !important;
-    margin-right: auto !important;
-    gap: 4px !important;
-    z-index: 100 !important;
-  }
-  
-  .nav-links {
-    position: fixed !important;
-    top: 0 !important;
-    left: -100% !important;
-    width: 280px !important;
-    max-width: 85vw !important;
-    height: 100vh !important;
-    background: var(--card-bg) !important;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.15) !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    padding-top: 80px !important;
-    transition: left 0.3s ease !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  
-  .nav-links.active {
-    left: 0 !important;
-  }
-  
-  .nav-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0,0,0,0.5) !important;
-    z-index: 99998 !important;
-    display: none !important;
-    backdrop-filter: none !important;
-  }
-  
-  .nav-overlay.active {
-    display: block !important;
-  }
-  
-  .nav-btn {
-    width: 100% !important;
-    padding: 18px 24px !important;
-    border-radius: 0 !important;
-    justify-content: flex-start !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    font-size: 1rem !important;
-    color: var(--text-color) !important;
-    position: relative !important;
-    z-index: 100000 !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
-  }
-  
-  .nav-btn::after {
-    display: none !important;
-  }
 }
