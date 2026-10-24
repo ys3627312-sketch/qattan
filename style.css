@@ -2449,11 +2449,6 @@ body.admin-open .whatsapp-fab {
    FIX ADMIN SCROLL & MOBILE MENU WIDTH & REVIEWS
    ========================================== */
 
-/* 1. منع سكرول الموقع الأساسي لما الأدمن يفتح */
-body.admin-open {
-  overflow: hidden !important;
-}
-
 /* 2. القائمة في الموبايل مش هتاخد الشاشة كلها */
 @media (max-width: 768px) {
   .nav-links {

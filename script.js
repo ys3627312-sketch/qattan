@@ -1229,7 +1229,7 @@ function showAdminLoginModal() {
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.remove('admin-open');
-  document.body.style.overflow = ''; // إرجاع السكرول
+  document.body.style.overflow = 'auto'; 
 }
 
 function showAdminDashboard() {
@@ -1381,7 +1381,7 @@ function showAdminDashboard() {
     signOut(auth).catch(() => {});
     isAdminLoggedIn = false;
     document.body.classList.remove('admin-logged-in');
-    document.body.style.overflow = ''; // إرجاع السكرول
+    document.body.style.overflow = 'auto'; 
   };
   
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -1706,6 +1706,7 @@ function showAdminDashboard() {
 // Init
 // =====================================================
 async function init() {
+  document.body.style.overflow = 'auto';
   loadLocalState();
   setupDarkMode();
   setupPhoneInput();
