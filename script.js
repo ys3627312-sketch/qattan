@@ -1751,18 +1751,14 @@ async function init() {
   renderCart();
   updateCartCount();
   
+  // =====================================================
+  // إعداد القائمة الجانبية وزرار الرجوع
+  // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
-  
   const navOverlay = document.createElement('div');
   navOverlay.className = 'nav-overlay';
   document.body.appendChild(navOverlay);
-
-  function openMobileMenu() {
-    navLinks?.classList.add('active');
-    navOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
 
   function closeMobileMenu() {
     navLinks?.classList.remove('active');
@@ -1770,7 +1766,13 @@ async function init() {
     document.body.style.overflow = 'auto';
   }
 
-  menuToggle?.addEventListener('click', openMobileMenu);
+  menuToggle?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navLinks?.classList.add('active');
+    navOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+
   navOverlay.addEventListener('click', closeMobileMenu);
 
   function navigateToPage(pageId) {
@@ -1780,7 +1782,10 @@ async function init() {
   }
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => navigateToPage(btn.dataset.page));
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateToPage(btn.dataset.page);
+    });
   });
 
   window.addEventListener('popstate', (e) => {
@@ -1802,6 +1807,7 @@ async function init() {
   });
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
+  // =====================================================
   
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
