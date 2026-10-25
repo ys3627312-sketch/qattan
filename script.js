@@ -276,8 +276,11 @@ function applyStoreConfig() {
   
   const waFab = document.getElementById('whatsappFab');
   if (waFab) {
-    const num = (storeConfig.phone || '').replace(/[^0-9]/g, '');
+    let num = (storeConfig.phone || '').replace(/[^0-9]/g, '');
+    if (num && !num.startsWith('20')) num = '20' + num.replace(/^0+/, '');
     waFab.href = `https://wa.me/${num}`;
+    waFab.target = '_blank';
+    waFab.rel = 'noopener noreferrer';
   }
   
   const footerText = document.getElementById('footerText');
@@ -1756,27 +1759,31 @@ function showAdminDashboard() {
 // =====================================================
 async function init() {
   // =====================================================
-  // إعداد القائمة الجانبية
+  // إعداد القائمة الجانبية (Drawer جديد)
   // =====================================================
-  const navLinks = document.querySelector('.nav-links');
+  const drawer = document.getElementById('mobileDrawer');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+  const drawerPanel = document.getElementById('drawerPanel');
   const menuToggle = document.getElementById('menuToggle');
-  
-  let navOverlay = document.querySelector('.nav-overlay');
-  if (!navOverlay) {
-    navOverlay = document.createElement('div');
-    navOverlay.className = 'nav-overlay';
-    document.body.appendChild(navOverlay);
-  }
+  const drawerStoreName = document.getElementById('drawerStoreName');
+  const drawerPhone = document.getElementById('drawerPhone');
 
-  function openMobileMenu() {
-    if (navLinks) navLinks.classList.add('active');
-    if (navOverlay) navOverlay.classList.add('active');
+  // تحديث اسم المتجر والهاتف في الـ drawer
+  if (drawerStoreName) drawerStoreName.textContent = storeConfig.name;
+  if (drawerPhone) drawerPhone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
   }
 
-  function closeMobileMenu() {
-    if (navLinks) navLinks.classList.remove('active');
-    if (navOverlay) navOverlay.classList.remove('active');
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
 
@@ -1784,49 +1791,64 @@ async function init() {
     menuToggle.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (navLinks && navLinks.classList.contains('active')) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
-      }
+      openDrawer();
     });
   }
 
-  if (navOverlay) {
-    navOverlay.addEventListener('click', closeMobileMenu);
-  }
+  if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+  if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
 
-  function navigateToPage(pageId) {
-    closeMobileMenu();
-    showPage(pageId);
-    window.history.pushState({ page: pageId }, '', window.location.href);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  document.querySelectorAll('.nav-btn').forEach(btn => {
+  // أزرار الـ drawer
+  document.querySelectorAll('.drawer-nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const pageId = btn.dataset.page;
-      if (pageId) navigateToPage(pageId);
+      const pageId = btn.dataset.drawerPage;
+      if (!pageId) return;
+      
+      // تحديث الحالة النشطة
+      document.querySelectorAll('.drawer-nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // اقفل الدراور
+      closeDrawer();
+      
+      // انتقل للصفحة
+      setTimeout(() => {
+        showPage(pageId);
+        window.history.pushState({ page: pageId }, '', window.location.href);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 150);
     });
   });
 
+  // ربط أزرار النافبار القديمة (لو موجودة على الديسكتوب)
+  document.querySelectorAll('.nav-links .nav-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const pageId = btn.dataset.page;
+      if (!pageId) return;
+      showPage(pageId);
+      window.history.pushState({ page: pageId }, '', window.location.href);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // زرار الرجوع
   window.addEventListener('popstate', (e) => {
-    if (navLinks && navLinks.classList.contains('active')) {
-      closeMobileMenu();
+    if (drawer && drawer.classList.contains('open')) {
+      closeDrawer();
       return;
     }
     
-    if (e.state && e.state.page) {
-      showPage(e.state.page);
-    } else {
-      showPage('home');
-    }
+    const page = e.state?.page || 'home';
+    showPage(page);
     
-    const currentPage = e.state?.page || 'home';
     document.querySelectorAll('.nav-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.page === currentPage);
+      b.classList.toggle('active', b.dataset.page === page);
+    });
+    document.querySelectorAll('.drawer-nav-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.drawerPage === page);
     });
   });
 

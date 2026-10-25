@@ -268,6 +268,50 @@
 <button class="scroll-top" id="scrollTopBtn" aria-label="العودة للأعلى"><i class="fas fa-chevron-up"></i></button>
 
 <audio id="successSound" preload="auto"><source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg"></audio>
+<!-- ============================================ -->
+<!-- Mobile Drawer Menu — مستقل تماماً -->
+<!-- ============================================ -->
+<div id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
+  <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
+  <div class="mobile-drawer-panel" id="drawerPanel">
+    <div class="drawer-header">
+      <div class="drawer-logo">
+        <h2 id="drawerStoreName">قطان</h2>
+        <span class="drawer-brand-tag">QATTAN</span>
+      </div>
+      <button class="drawer-close" id="drawerCloseBtn" aria-label="إغلاق">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <nav class="drawer-nav">
+      <button class="drawer-nav-btn active" data-drawer-page="home">
+        <i class="fas fa-tshirt"></i>
+        <span>المنتجات</span>
+      </button>
+      <button class="drawer-nav-btn" data-drawer-page="new">
+        <i class="fas fa-sparkles"></i>
+        <span>وصل حديثاً</span>
+      </button>
+      <button class="drawer-nav-btn" data-drawer-page="offers">
+        <i class="fas fa-tags"></i>
+        <span>العروض</span>
+      </button>
+      <button class="drawer-nav-btn" data-drawer-page="favorites">
+        <i class="fas fa-heart"></i>
+        <span>المفضلة</span>
+      </button>
+      <button class="drawer-nav-btn" data-drawer-page="orders">
+        <i class="fas fa-box"></i>
+        <span>طلباتي</span>
+      </button>
+    </nav>
+    
+    <div class="drawer-footer">
+      <p><i class="fas fa-phone"></i> <span id="drawerPhone">01225889925</span></p>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="script.js"></script>
 </body>
