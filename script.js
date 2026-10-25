@@ -1755,59 +1755,49 @@ function showAdminDashboard() {
 // Init
 // =====================================================
 async function init() {
-  document.body.style.overflow = 'auto';
-  
-  loadLocalState();
-  getClientId(); // ✅ تأكد إن كل متصفح عنده clientId
-  setupDarkMode();
-  setupPhoneInput();
-  populateAreas();
-  setupScrollTop();
-  
-  await loadStoreData();
-  
-  applyStoreConfig();
-  renderFeatured();
-  renderProducts();
-  renderCart();
-  updateCartCount();
-  
   // =====================================================
-  // إعداد القائمة الجانبية وزرار الرجوع
+  // إعداد القائمة الجانبية
   // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
-  const navOverlay = document.createElement('div');
-  navOverlay.className = 'nav-overlay';
-  document.body.appendChild(navOverlay);
+  
+  let navOverlay = document.querySelector('.nav-overlay');
+  if (!navOverlay) {
+    navOverlay = document.createElement('div');
+    navOverlay.className = 'nav-overlay';
+    document.body.appendChild(navOverlay);
+  }
 
-  // ✅ ضيف زرار إغلاق (X) جوه القائمة
-  if (navLinks && !navLinks.querySelector('.nav-close-btn')) {
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'nav-close-btn';
-    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    closeBtn.setAttribute('aria-label', 'إغلاق القائمة');
-    closeBtn.addEventListener('click', closeMobileMenu);
-    navLinks.insertBefore(closeBtn, navLinks.firstChild);
+  function openMobileMenu() {
+    if (navLinks) navLinks.classList.add('active');
+    if (navOverlay) navOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
   }
 
   function closeMobileMenu() {
-    navLinks?.classList.remove('active');
-    navOverlay?.classList.remove('active');
+    if (navLinks) navLinks.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
     document.body.style.overflow = '';
   }
 
-  menuToggle?.addEventListener('click', (e) => {
-    e.preventDefault();
-    navLinks?.classList.add('active');
-    navOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
+  if (menuToggle) {
+    menuToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (navLinks && navLinks.classList.contains('active')) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
+    });
+  }
 
-  navOverlay.addEventListener('click', closeMobileMenu);
+  if (navOverlay) {
+    navOverlay.addEventListener('click', closeMobileMenu);
+  }
 
   function navigateToPage(pageId) {
-    closeMobileMenu(); // ✅ اقفل القائمة الأول
+    closeMobileMenu();
     showPage(pageId);
     window.history.pushState({ page: pageId }, '', window.location.href);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1816,12 +1806,14 @@ async function init() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      navigateToPage(btn.dataset.page);
+      e.stopPropagation();
+      const pageId = btn.dataset.page;
+      if (pageId) navigateToPage(pageId);
     });
   });
 
   window.addEventListener('popstate', (e) => {
-    if (navLinks?.classList.contains('active')) {
+    if (navLinks && navLinks.classList.contains('active')) {
       closeMobileMenu();
       return;
     }

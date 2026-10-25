@@ -35,7 +35,8 @@
   .menu-toggle {
     display: flex !important;
     order: 1 !important;
-    z-index: 100 !important;
+    z-index: 100001 !important;
+    position: relative !important;
   }
   
   .logo {
@@ -48,6 +49,23 @@
     margin-right: auto !important;
     gap: 4px !important;
     z-index: 100 !important;
+  }
+
+  /* --- الطبقة السوداء اللي ورا القائمة (تحت القائمة) --- */
+  .nav-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.55) !important;
+    backdrop-filter: none !important;
+    z-index: 99997 !important;
+    display: none !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+  }
+  
+  .nav-overlay.active {
+    display: block !important;
+    opacity: 1 !important;
   }
 
   /* --- القائمة الجانبية (Drawer) --- */
@@ -63,16 +81,17 @@
     flex-direction: column !important;
     justify-content: flex-start !important;
     align-items: stretch !important;
-    padding: 0 !important;
+    padding: 80px 0 0 0 !important;
     gap: 0 !important;
     
     transform: translateX(-105%) !important;
     transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    z-index: 99999 !important;
+    z-index: 99998 !important;
     
     visibility: hidden !important;
     opacity: 0 !important;
     overflow-y: auto !important;
+    display: flex !important;
   }
   
   .nav-links.active {
@@ -81,10 +100,14 @@
     opacity: 1 !important;
   }
 
-  /* هيدر جوه القائمة */
+  /* عنوان "القائمة" أعلى الـ drawer */
   .nav-links::before {
     content: 'القائمة';
-    display: block;
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    display: block !important;
     font-family: 'Playfair Display', serif;
     font-size: 1.3rem;
     font-weight: 800;
@@ -93,46 +116,8 @@
     border-bottom: 1px solid var(--border-color);
     letter-spacing: 1px;
     text-align: right;
-  }
-
-  /* زرار إغلاق القائمة */
-  .nav-close-btn {
-    position: absolute !important;
-    top: 18px !important;
-    left: 18px !important;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 50% !important;
-    background: var(--bg-soft) !important;
-    color: var(--text-color) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1rem !important;
-    cursor: pointer !important;
-    z-index: 100001 !important;
-    border: none !important;
-  }
-  
-  .nav-close-btn:hover {
-    background: var(--border-color) !important;
-  }
-  
-  /* --- الطبقة السوداء اللي ورا القائمة --- */
-  .nav-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0,0,0,0.55) !important;
-    backdrop-filter: none !important;
-    z-index: 99998 !important;
-    display: none !important;
-    opacity: 0 !important;
-    transition: opacity 0.3s ease !important;
-  }
-  
-  .nav-overlay.active {
-    display: block !important;
-    opacity: 1 !important;
+    background: var(--card-bg);
+    z-index: 100000;
   }
   
   /* --- زراير القائمة --- */
@@ -151,12 +136,14 @@
     pointer-events: auto !important;
     text-align: right !important;
     transition: background 0.2s ease !important;
+    cursor: pointer !important;
   }
 
   .nav-btn span {
     display: block !important;
     width: 100% !important;
     text-align: right !important;
+    pointer-events: none !important;
   }
 
   .nav-btn:hover,
