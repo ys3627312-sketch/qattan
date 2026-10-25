@@ -28,7 +28,6 @@ let offers = [];
 let cart = [];
 let favorites = [];
 let orders = [];
-let reportedReviews = [];
 
 let currentCategory = 'men';
 let currentSearchQuery = '';
@@ -42,10 +41,23 @@ const STORAGE_KEYS = {
   cart: 'qattan_cart',
   favorites: 'qattan_favorites',
   darkMode: 'qattan_darkMode',
-  lastProduct: 'qattan_lastProduct'
+  lastProduct: 'qattan_lastProduct',
+  clientId: 'qattan_clientId'
 };
 
 const MAX_QTY = 10;
+
+// =====================================================
+// Client ID — لتمييز طلبات كل عميل
+// =====================================================
+function getClientId() {
+  let id = localStorage.getItem(STORAGE_KEYS.clientId);
+  if (!id) {
+    id = 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(STORAGE_KEYS.clientId, id);
+  }
+  return id;
+}
 
 // =====================================================
 // أدوات مساعدة
@@ -93,6 +105,13 @@ function buildImageUrl(url, name) {
     return `https://placehold.co/400x533/f0ebe1/1a1a1a?text=${encodeURIComponent(name || 'منتج')}`;
   }
   return url;
+}
+
+function restoreScroll() {
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
+  document.body.classList.remove('admin-open');
+  document.body.classList.remove('admin-logged-in');
 }
 
 // =====================================================
@@ -162,10 +181,17 @@ async function saveOrderToFirebase(orderData) {
   }
 }
 
-async function loadOrdersFromFirebase(filterType) {
+async function loadOrdersFromFirebase(filterType, onlyMyOrders = false) {
   try {
     const snap = await getDocs(collection(db, 'orders'));
     let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+    
+    // فلترة طلبات العميل الحالي
+    if (onlyMyOrders) {
+      const myId = getClientId();
+      list = list.filter(o => o.clientId === myId);
+    }
+    
     const now = new Date();
     
     if (filterType === 'today') {
@@ -907,6 +933,7 @@ async function sendOrder() {
   const fullAddress = `${city} - ${address}`;
   
   const orderData = {
+    clientId: getClientId(),
     customerName: name,
     customerPhone: phoneCheck.full,
     customerPhoneLocal: phone,
@@ -980,7 +1007,7 @@ async function renderCustomerOrders() {
   
   container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>';
   
-  const list = await loadOrdersFromFirebase('all');
+  const list = await loadOrdersFromFirebase('all', true);
   
   if (list.length === 0) {
     container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>لا توجد طلبات حتى الآن</p></div>';
@@ -1246,14 +1273,15 @@ function showAdminLoginModal() {
 // =====================================================
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
-  document.body.classList.remove('admin-open');
-  document.body.style.overflow = 'auto';
+  restoreScroll();
+  isAdminLoggedIn = false;
 }
 
 function showAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
   document.body.classList.add('admin-open');
   document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
   
   const overlay = document.createElement('div');
   overlay.className = 'admin-panel-overlay show';
@@ -1261,7 +1289,7 @@ function showAdminDashboard() {
     <div class="admin-dashboard">
       <div class="admin-top">
         <h2><i class="fas fa-store" style="color:var(--accent);margin-left:10px;"></i> لوحة تحكم قطان</h2>
-        <button id="closeAdminDash" class="admin-close-btn"><i class="fas fa-times"></i> إغلاق اللوحة</button>
+        <button id="closeAdminDash" class="admin-close-btn"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
       </div>
       
       <div class="admin-tabs">
@@ -1399,12 +1427,11 @@ function showAdminDashboard() {
   `;
   document.body.appendChild(overlay);
   
-  overlay.querySelector('#closeAdminDash').onclick = () => {
-    overlay.remove();
-    signOut(auth).catch(() => {});
-    isAdminLoggedIn = false;
-    document.body.classList.remove('admin-logged-in');
-    document.body.style.overflow = 'auto';
+  // ✅ زرار الخروج — signOut نظيف + رجوع السكرول
+  overlay.querySelector('#closeAdminDash').onclick = async () => {
+    try { await signOut(auth); } catch(e) {}
+    closeAdminDashboard();
+    showToast('تم تسجيل الخروج');
   };
   
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -1598,7 +1625,7 @@ function showAdminDashboard() {
     const cont = overlay.querySelector('#ordersListAdmin');
     cont.innerHTML = '<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>';
     
-    const list = await loadOrdersFromFirebase(currentOrdersFilter);
+    const list = await loadOrdersFromFirebase(currentOrdersFilter, false);
     
     if (list.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات</p>'; return; }
     
@@ -1731,6 +1758,7 @@ async function init() {
   document.body.style.overflow = 'auto';
   
   loadLocalState();
+  getClientId(); // ✅ تأكد إن كل متصفح عنده clientId
   setupDarkMode();
   setupPhoneInput();
   populateAreas();
@@ -1753,10 +1781,20 @@ async function init() {
   navOverlay.className = 'nav-overlay';
   document.body.appendChild(navOverlay);
 
+  // ✅ ضيف زرار إغلاق (X) جوه القائمة
+  if (navLinks && !navLinks.querySelector('.nav-close-btn')) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'nav-close-btn';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.setAttribute('aria-label', 'إغلاق القائمة');
+    closeBtn.addEventListener('click', closeMobileMenu);
+    navLinks.insertBefore(closeBtn, navLinks.firstChild);
+  }
+
   function closeMobileMenu() {
     navLinks?.classList.remove('active');
-    navOverlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
+    navOverlay?.classList.remove('active');
+    document.body.style.overflow = '';
   }
 
   menuToggle?.addEventListener('click', (e) => {
@@ -1769,9 +1807,10 @@ async function init() {
   navOverlay.addEventListener('click', closeMobileMenu);
 
   function navigateToPage(pageId) {
+    closeMobileMenu(); // ✅ اقفل القائمة الأول
     showPage(pageId);
-    closeMobileMenu();
     window.history.pushState({ page: pageId }, '', window.location.href);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
