@@ -274,10 +274,13 @@ function applyStoreConfig() {
   const phone = document.getElementById('footerPhone');
   if (phone) phone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
   
+  // تحديث زرار الواتساب
   const waFab = document.getElementById('whatsappFab');
   if (waFab) {
-    let num = (storeConfig.phone || '').replace(/[^0-9]/g, '');
+    const rawPhone = storeConfig.phone || '201225899225'; 
+    let num = String(rawPhone).replace(/[^0-9]/g, '');
     if (num && !num.startsWith('20')) num = '20' + num.replace(/^0+/, '');
+    
     waFab.href = `https://wa.me/${num}`;
     waFab.target = '_blank';
     waFab.rel = 'noopener noreferrer';
