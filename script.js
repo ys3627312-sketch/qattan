@@ -1745,45 +1745,57 @@ async function init() {
   updateCartCount();
   
   // =====================================================
-  // إعداد القائمة الجانبية وزرار الرجوع
+  // إعداد القائمة الجانبية وزرار الرجوع (إعادة هيكلة)
   // =====================================================
   const navLinks = document.querySelector('.nav-links');
   const menuToggle = document.getElementById('menuToggle');
-  const navOverlay = document.createElement('div');
-  navOverlay.className = 'nav-overlay';
-  document.body.appendChild(navOverlay);
-
-  function closeMobileMenu() {
-    navLinks?.classList.remove('active');
-    navOverlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
+  
+  let navOverlay = document.querySelector('.nav-overlay');
+  if (!navOverlay) {
+    navOverlay = document.createElement('div');
+    navOverlay.className = 'nav-overlay';
+    document.body.appendChild(navOverlay);
   }
 
-  menuToggle?.addEventListener('click', (e) => {
-    e.preventDefault();
-    navLinks?.classList.add('active');
-    navOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
+  function closeMenu() {
+    if (navLinks) navLinks.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
+    document.body.style.overflow = ''; 
+  }
 
-  navOverlay.addEventListener('click', closeMobileMenu);
+  if (menuToggle) {
+    menuToggle.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      navLinks.classList.add('active');
+      navOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden'; 
+    };
+  }
+
+  if (navOverlay) {
+    navOverlay.onclick = function() {
+      closeMenu();
+    };
+  }
 
   function navigateToPage(pageId) {
     showPage(pageId);
-    closeMobileMenu();
+    closeMenu();
     window.history.pushState({ page: pageId }, '', window.location.href);
   }
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.onclick = function(e) {
       e.preventDefault();
+      e.stopPropagation();
       navigateToPage(btn.dataset.page);
-    });
+    };
   });
 
   window.addEventListener('popstate', (e) => {
-    if (navLinks?.classList.contains('active')) {
-      closeMobileMenu();
+    if (navLinks && navLinks.classList.contains('active')) {
+      closeMenu();
       return;
     }
     
@@ -1793,13 +1805,14 @@ async function init() {
       showPage('home');
     }
     
-    const currentPage = e.state?.page || 'home';
+    const currentPage = (e.state && e.state.page) ? e.state.page : 'home';
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.page === currentPage);
     });
   });
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
+  // =====================================================
   
   // ربط باقي الأزرار
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {

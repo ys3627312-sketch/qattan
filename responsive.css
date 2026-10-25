@@ -56,27 +56,23 @@
   .nav-links {
     position: fixed !important;
     top: 0 !important;
-    right: 0 !important; /* نثبتها على اليمين */
+    right: 0 !important; 
     left: auto !important;
     width: 280px !important;
     max-width: 85vw !important;
     height: 100vh !important;
     background: var(--card-bg) !important;
-    box-shadow: -4px 0 15px rgba(0,0,0,0.15) !important; /* ظل من الشمال */
+    box-shadow: -4px 0 15px rgba(0,0,0,0.15) !important; 
     flex-direction: column !important;
     justify-content: flex-start !important;
     padding-top: 80px !important;
-    
-    /* نخفيها برة الشاشة من اليمين */
     transform: translateX(100%) !important; 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     z-index: 99999 !important;
-    
     visibility: hidden !important;
     opacity: 0 !important;
   }
   
-  /* لما تتفتح */
   .nav-links.active {
     transform: translateX(0) !important;
     visibility: visible !important;
