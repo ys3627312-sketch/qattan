@@ -1,11 +1,11 @@
 // =====================================================
-// QATTAN — Store Script (Firebase Edition)
+// QATTAN — Store Script (Firebase Edition — URLs Only)
 // =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc,
-  collection, addDoc, getDocs, updateDoc, deleteDoc,
+  collection, addDoc, getDocs, updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -27,7 +27,6 @@ let products = [];
 let offers = [];
 let cart = [];
 let favorites = [];
-let orders = [];
 
 let currentCategory = 'tshirts';
 let currentSearchQuery = '';
@@ -47,7 +46,6 @@ const STORAGE_KEYS = {
 
 const MAX_QTY = 10;
 
-// قائمة الألوان المتاحة
 const AVAILABLE_COLORS = [
   { id: 'black', name: 'أسود', hex: '#1a1a1a' },
   { id: 'white', name: 'أبيض', hex: '#ffffff' },
@@ -84,32 +82,6 @@ function getClientId() {
 // =====================================================
 // أدوات مساعدة
 // =====================================================
-async function fileToCompressedBase64(file) {
-  try {
-    const options = {
-      maxSizeMB: 0.2,
-      maxWidthOrHeight: 800,
-      useWebWorker: true,
-    };
-    const compressedFile = await imageCompression(file, options);
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(compressedFile);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-  } catch (error) {
-    console.error('Error compressing image:', error);
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-  }
-}
-
 function escapeHtml(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
@@ -210,8 +182,6 @@ async function saveStoreData() {
       msg = 'غير مصرح بالحفظ — سجل دخول الأدمن تاني';
     } else if (e.code === 'unavailable') {
       msg = 'مشكلة في الاتصال — جرب تاني';
-    } else if (e.message && e.message.includes('exceeds the maximum allowed size')) {
-      msg = 'حجم البيانات كبير جداً، يرجى مراجعة الصور المرفوعة.';
     }
     showToast(msg);
     return false;
@@ -1507,21 +1477,11 @@ function showAdminDashboard() {
           
           <div style="margin-top:20px; margin-bottom:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);">
             <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">
-              <i class="fas fa-images"></i> صور المنتج (يتم ضغطها تلقائياً):
+              <i class="fas fa-link"></i> روابط صور المنتج (يمكنك إضافة أكثر من صورة):
             </label>
             
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-              <button type="button" id="uploadImgsBtn" class="upload-btn" style="flex:1; padding:10px;">
-                <i class="fas fa-upload"></i> رفع صور
-              </button>
-              <button type="button" id="pasteImgBtn" class="paste-btn" style="flex:1; padding:10px;">
-                <i class="fas fa-paste"></i> لصق صورة
-              </button>
-            </div>
-            <input type="file" id="newImgsFiles" accept="image/*" multiple style="display:none;">
-            
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-              <input type="text" id="newImgUrlInput" class="admin-input" placeholder="أو ضع رابط صورة هنا..." style="margin-bottom:0;">
+              <input type="text" id="newImgUrlInput" class="admin-input" placeholder="ضع رابط صورة هنا..." style="margin-bottom:0;">
               <button type="button" id="addImgUrlBtn" class="admin-btn" style="padding:0 15px; white-space:nowrap;">إضافة</button>
             </div>
             
@@ -1635,7 +1595,7 @@ function showAdminDashboard() {
   };
   
   // =====================================================
-  // إدارة معرض الصور
+  // إدارة معرض الصور (روابط فقط)
   // =====================================================
   let galleryImages = []; 
   
@@ -1655,25 +1615,6 @@ function showAdminDashboard() {
     renderGalleryPreview();
   };
 
-  overlay.querySelector('#uploadImgsBtn').onclick = () => overlay.querySelector('#newImgsFiles').click();
-  overlay.querySelector('#newImgsFiles').onchange = async (e) => {
-    const files = Array.from(e.target.files);
-    const btn = overlay.querySelector('#uploadImgsBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الضغط...';
-    btn.disabled = true;
-
-    for (let f of files) {
-      if (f.type.startsWith('image/')) {
-        const base64 = await fileToCompressedBase64(f);
-        galleryImages.push(base64);
-      }
-    }
-    btn.innerHTML = '<i class="fas fa-upload"></i> رفع صور';
-    btn.disabled = false;
-    renderGalleryPreview();
-    e.target.value = ''; 
-  };
-
   overlay.querySelector('#addImgUrlBtn').onclick = () => {
     const input = overlay.querySelector('#newImgUrlInput');
     const url = input.value.trim();
@@ -1682,26 +1623,6 @@ function showAdminDashboard() {
       input.value = '';
       renderGalleryPreview();
     }
-  };
-
-  overlay.querySelector('#pasteImgBtn').onclick = () => {
-    showToast('الصق الصورة بـ Ctrl+V');
-    const handler = async (e) => {
-      const items = e.clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith('image/')) {
-          const f = items[i].getAsFile();
-          const base64 = await fileToCompressedBase64(f);
-          galleryImages.push(base64);
-          renderGalleryPreview();
-          showToast('تم لصق الصورة');
-          document.removeEventListener('paste', handler);
-          break;
-        }
-      }
-    };
-    document.addEventListener('paste', handler);
-    setTimeout(() => document.removeEventListener('paste', handler), 10000);
   };
 
   // =====================================================
@@ -1764,7 +1685,7 @@ function showAdminDashboard() {
     const desc = overlay.querySelector('#newDesc').value.trim();
     
     if (!name) { showToast('أدخل اسم المنتج'); return; }
-    if (galleryImages.length === 0) { showToast('أضف صورة واحدة على الأقل'); return; }
+    if (galleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
     
     const sizeMatrix = {}; 
     const allAvailableColors = new Set();
@@ -1955,13 +1876,7 @@ function showAdminDashboard() {
           <hr style="margin:15px 0; border:none; border-top:1px dashed var(--border-color);">
 
           <div style="margin-top:15px; margin-bottom:15px;">
-            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">صور المنتج:</label>
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-              <button type="button" id="editUploadImgsBtn" class="upload-btn" style="flex:1; padding:10px;">
-                <i class="fas fa-upload"></i> رفع صور
-              </button>
-              <input type="file" id="editImgsFiles" accept="image/*" multiple style="display:none;">
-            </div>
+            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">روابط صور المنتج:</label>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
               <input type="text" id="editImgUrlInput" class="admin-input" placeholder="أو ضع رابط صورة..." style="margin-bottom:0;">
               <button type="button" id="editAddImgUrlBtn" class="admin-btn" style="padding:0 15px;">إضافة</button>
@@ -2006,25 +1921,6 @@ function showAdminDashboard() {
       renderEditGallery();
     };
     renderEditGallery();
-
-    modal.querySelector('#editUploadImgsBtn').onclick = () => modal.querySelector('#editImgsFiles').click();
-    modal.querySelector('#editImgsFiles').onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      const btn = modal.querySelector('#editUploadImgsBtn');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الضغط...';
-      btn.disabled = true;
-
-      for (let f of files) {
-        if (f.type.startsWith('image/')) {
-          const base64 = await fileToCompressedBase64(f);
-          editGalleryImages.push(base64);
-        }
-      }
-      btn.innerHTML = '<i class="fas fa-upload"></i> رفع صور';
-      btn.disabled = false;
-      renderEditGallery();
-      e.target.value = '';
-    };
 
     modal.querySelector('#editAddImgUrlBtn').onclick = () => {
       const input = modal.querySelector('#editImgUrlInput');
@@ -2098,7 +1994,7 @@ function showAdminDashboard() {
       const newDesc = modal.querySelector('#editProdDesc').value.trim();
       
       if (!newName) { showToast('أدخل اسم المنتج'); return; }
-      if (editGalleryImages.length === 0) { showToast('أضف صورة واحدة على الأقل'); return; }
+      if (editGalleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
 
       const newSizeMatrix = {};
       const allColors = new Set();
