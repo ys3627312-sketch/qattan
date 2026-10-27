@@ -29,7 +29,7 @@ let cart = [];
 let favorites = [];
 let orders = [];
 
-let currentCategory = 'tshirts'; // تم التعديل
+let currentCategory = 'tshirts';
 let currentSearchQuery = '';
 let currentSortValue = 'default';
 let lastProductId = null;
@@ -48,7 +48,7 @@ const STORAGE_KEYS = {
 const MAX_QTY = 10;
 
 // =====================================================
-// Client ID — لتمييز طلبات كل عميل
+// Client ID
 // =====================================================
 function getClientId() {
   let id = localStorage.getItem(STORAGE_KEYS.clientId);
@@ -115,7 +115,7 @@ function restoreScroll() {
 }
 
 // =====================================================
-// الحفظ والتحميل من localStorage
+// الحفظ والتحميل
 // =====================================================
 function saveCart() {
   try { localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart)); } catch(e) {}
@@ -141,7 +141,7 @@ function loadLocalState() {
 }
 
 // =====================================================
-// Firebase — تحميل بيانات المتجر
+// Firebase — Store Data
 // =====================================================
 async function loadStoreData() {
   try {
@@ -169,7 +169,7 @@ async function saveStoreData() {
 }
 
 // =====================================================
-// Firebase — الطلبات
+// Firebase — Orders
 // =====================================================
 async function saveOrderToFirebase(orderData) {
   try {
@@ -245,18 +245,8 @@ async function updateOrderStatusInFirebase(firestoreId, status) {
   }
 }
 
-async function deleteOrderFromFirebase(firestoreId) {
-  try {
-    await deleteDoc(doc(db, 'orders', firestoreId));
-    return true;
-  } catch (e) {
-    console.error('deleteOrder error:', e);
-    return false;
-  }
-}
-
 // =====================================================
-// إعدادات المتجر على الصفحة
+// إعدادات المتجر
 // =====================================================
 function applyStoreConfig() {
   document.title = storeConfig.name + ' | ملابس بجودة عالية';
@@ -296,8 +286,9 @@ function applyStoreConfig() {
 // =====================================================
 // عرض المنتجات
 // =====================================================
-// تم تعديل الفئات هنا
 const categoryLabels = { tshirts: 'تيشيرتات', pants: 'بناطيل', shoes: 'أحذية', all: 'الكل' };
+
+const colorHexMap = { 'أسود': '#1a1a1a', 'أبيض': '#ffffff', 'أزرق': '#3498db', 'أحمر': '#e74c3c', 'أخضر': '#27ae60', 'رمادي': '#7f8c8d' };
 
 function getFilteredProducts() {
   let list = [...products];
@@ -604,6 +595,7 @@ function renderProductDetails(id) {
   const isAvail = p.isAvailable !== false;
   
   const allImgs = [p.image, ...(p.gallery || [])].filter(Boolean);
+  const uniqueImgs = [...new Set(allImgs)];
   
   let reviewsHtml = '';
   if (p.ratings && p.ratings.length > 0) {
@@ -642,11 +634,11 @@ function renderProductDetails(id) {
   container.innerHTML = `
     <div class="product-gallery">
       <div class="product-gallery-main">
-        <img id="mainImage" src="${escapeHtml(buildImageUrl(allImgs[0], p.name))}" alt="${escapeHtml(p.name)}">
+        <img id="mainImage" src="${escapeHtml(buildImageUrl(uniqueImgs[0], p.name))}" alt="${escapeHtml(p.name)}">
       </div>
-      ${allImgs.length > 1 ? `
+      ${uniqueImgs.length > 1 ? `
         <div class="product-gallery-thumbs">
-          ${allImgs.map((img, i) => `
+          ${uniqueImgs.map((img, i) => `
             <div class="gallery-thumb ${i === 0 ? 'active' : ''}" data-img-idx="${i}">
               <img src="${escapeHtml(buildImageUrl(img, p.name))}" alt="">
             </div>
@@ -666,7 +658,7 @@ function renderProductDetails(id) {
         <span class="count">(${p.totalRatings || 0} تقييم)</span>
       </div>
       
-      <div class="product-details-price ${hasOffer ? 'sale-price' : ''}">
+      <div class="product-details-price ${hasOffer ? 'sale-price' : ''}" id="mainPriceDisplay">
         ${formatPrice(finalPrice)} ج.م
         ${hasOffer ? `<span class="old">${formatPrice(p.price)} ج.م</span>` : ''}
       </div>
@@ -683,11 +675,11 @@ function renderProductDetails(id) {
           </div>
           <div class="size-selector">
             ${p.sizes.map((s, i) => {
-              const qty = p.sizeQuantities ? (p.sizeQuantities[s] || 0) : 999;
+              const matrix = p.sizeMatrix ? p.sizeMatrix[s] : null;
+              const qty = matrix ? matrix.qty : (p.isAvailable === false ? 0 : 999);
               const isOut = qty <= 0;
-              const isFirstAvailable = !isOut && i === 0;
               return `
-                <button class="size-pill ${isFirstAvailable ? 'selected' : ''} ${isOut ? 'out-of-stock' : ''}" 
+                <button class="size-pill ${i === 0 && !isOut ? 'selected' : ''} ${isOut ? 'out-of-stock' : ''}" 
                         data-size="${escapeHtml(s)}" ${isOut ? 'disabled' : ''}>
                   ${escapeHtml(s)}
                   ${isOut ? '<br><small style="font-size:0.65rem;">نفذ</small>' : ''}
@@ -696,18 +688,10 @@ function renderProductDetails(id) {
             }).join('')}
           </div>
         </div>
-      ` : ''}
-      
-      ${p.colors && p.colors.length ? `
-        <div class="option-section">
-          <div class="option-header"><span class="option-label">اللون</span></div>
-          <div class="color-selector">
-            ${p.colors.map((c, i) => `
-              <button class="color-swatch ${i === 0 ? 'selected' : ''}" 
-                data-color='${escapeHtml(JSON.stringify(c))}' 
-                style="background:${c.hex};" title="${escapeHtml(c.name)}"></button>
-            `).join('')}
-          </div>
+        
+        <div class="option-section" id="colorSection">
+          <div class="option-header"><span class="option-label">اللون المتاح</span></div>
+          <div class="color-selector" id="dynamicColors"></div>
         </div>
       ` : ''}
       
@@ -737,14 +721,62 @@ function renderProductDetails(id) {
     </div>
   `;
   
+  // تحديد أول مقاس متاح
   let selSize = null;
+  let selColorName = null;
+  
   if (p.sizes) {
     for (let s of p.sizes) {
-      const qty = p.sizeQuantities ? (p.sizeQuantities[s] || 0) : 999;
+      const matrix = p.sizeMatrix ? p.sizeMatrix[s] : null;
+      const qty = matrix ? matrix.qty : (p.isAvailable === false ? 0 : 999);
       if (qty > 0) { selSize = s; break; }
     }
   }
-  let selColor = p.colors?.[0] || null;
+  
+  const priceDisplay = document.getElementById('mainPriceDisplay');
+  const dynamicColors = document.getElementById('dynamicColors');
+  
+  function updatePriceAndColors(selectedSize) {
+    if (!p.sizeMatrix || !p.sizeMatrix[selectedSize]) return;
+    const matrix = p.sizeMatrix[selectedSize];
+    
+    // تحديث السعر
+    if (priceDisplay) {
+      priceDisplay.innerHTML = `${formatPrice(matrix.price)} ج.م`;
+      if (hasOffer && p.offerPrice < p.price) {
+        priceDisplay.innerHTML += ` <span class="old">${formatPrice(p.price)} ج.م</span>`;
+      }
+    }
+    
+    // تحديث الألوان
+    if (dynamicColors) {
+      if (matrix.colors && matrix.colors.length > 0) {
+        dynamicColors.innerHTML = matrix.colors.map((cName, i) => `
+          <button class="color-swatch ${i === 0 ? 'selected' : ''}" 
+            data-color-name="${escapeHtml(cName)}" 
+            style="background:${colorHexMap[cName] || '#ccc'};" 
+            title="${escapeHtml(cName)}"></button>
+        `).join('');
+        
+        selColorName = matrix.colors[0];
+        
+        dynamicColors.querySelectorAll('.color-swatch').forEach(sw => {
+          sw.addEventListener('click', () => {
+            dynamicColors.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+            sw.classList.add('selected');
+            selColorName = sw.dataset.colorName;
+          });
+        });
+      } else {
+        dynamicColors.innerHTML = '<p style="font-size:0.85rem;color:var(--danger);">لا توجد ألوان متاحة لهذا المقاس</p>';
+        selColorName = null;
+      }
+    }
+  }
+  
+  if (selSize) {
+    updatePriceAndColors(selSize);
+  }
   
   container.querySelectorAll('.size-pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -752,14 +784,7 @@ function renderProductDetails(id) {
       container.querySelectorAll('.size-pill').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       selSize = btn.dataset.size;
-    });
-  });
-  
-  container.querySelectorAll('.color-swatch').forEach(btn => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      try { selColor = JSON.parse(btn.dataset.color); } catch(e) { selColor = null; }
+      updatePriceAndColors(selSize);
     });
   });
   
@@ -767,14 +792,22 @@ function renderProductDetails(id) {
     thumb.addEventListener('click', () => {
       const idx = parseInt(thumb.dataset.imgIdx);
       const mainImg = document.getElementById('mainImage');
-      if (mainImg) mainImg.src = buildImageUrl(allImgs[idx], p.name);
+      if (mainImg) mainImg.src = buildImageUrl(uniqueImgs[idx], p.name);
       container.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
       thumb.classList.add('active');
     });
   });
   
   document.getElementById('addToCartBtn')?.addEventListener('click', () => {
-    addToCart(p, 1, selSize, selColor);
+    if (!selSize) {
+      showToast('اختر مقاس أولاً');
+      return;
+    }
+    const matrix = p.sizeMatrix ? p.sizeMatrix[selSize] : null;
+    const customPrice = matrix ? matrix.price : p.price;
+    const colorObj = selColorName ? { name: selColorName, hex: colorHexMap[selColorName] || '#000' } : null;
+    
+    addToCart(p, 1, selSize, colorObj, customPrice);
   });
   
   document.getElementById('wishlistBtn')?.addEventListener('click', () => toggleFavorite(p.id));
@@ -810,15 +843,15 @@ function renderProductDetails(id) {
 // =====================================================
 // السلة
 // =====================================================
-function addToCart(product, qty = 1, size = null, color = null) {
+function addToCart(product, qty = 1, size = null, color = null, customPrice = null) {
   if (product.isAvailable === false) {
     showToast('هذا المنتج غير متوفر');
     return;
   }
   
-  if (size && product.sizeQuantities) {
-    const available = product.sizeQuantities[size] || 0;
-    if (available <= 0) {
+  if (size && product.sizeMatrix) {
+    const matrix = product.sizeMatrix[size];
+    if (matrix && matrix.qty <= 0) {
       showToast('هذا المقاس غير متوفر');
       return;
     }
@@ -826,7 +859,7 @@ function addToCart(product, qty = 1, size = null, color = null) {
   
   const variantKey = `${product.id}_${size || ''}_${color?.name || ''}`;
   const existing = cart.find(c => c.variantKey === variantKey);
-  const finalPrice = product.offerPrice || product.price;
+  const finalPrice = customPrice || product.offerPrice || product.price;
   
   if (existing) {
     if (existing.quantity + qty > MAX_QTY) {
@@ -1364,14 +1397,6 @@ function showAdminDashboard() {
               <input type="text" id="newName" class="admin-input" placeholder="مثال: تيشيرت قطن">
             </div>
             <div>
-              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">السعر</label>
-              <input type="number" id="newPrice" class="admin-input" placeholder="350">
-            </div>
-            <div>
-              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">سعر العرض (اختياري)</label>
-              <input type="number" id="newOfferPrice" class="admin-input" placeholder="0">
-            </div>
-            <div>
               <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الفئة</label>
               <select id="newCategory" class="admin-input">
                 <option value="tshirts">تيشيرتات</option>
@@ -1384,18 +1409,32 @@ function showAdminDashboard() {
           <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
           <textarea id="newDesc" class="admin-input" rows="3" placeholder="وصف المنتج..."></textarea>
           
-          <div class="image-upload-section">
-            <button type="button" id="uploadImgBtn" class="upload-btn"><i class="fas fa-upload"></i> رفع صورة</button>
-            <button type="button" id="pasteImgBtn" class="paste-btn"><i class="fas fa-paste"></i> لصق صورة (Ctrl+V)</button>
+          <div style="margin-top:20px; margin-bottom:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);">
+            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">
+              <i class="fas fa-images"></i> صور المنتج (يمكنك إضافة عدة صور):
+            </label>
+            
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <button type="button" id="uploadImgsBtn" class="upload-btn" style="flex:1; padding:10px;">
+                <i class="fas fa-upload"></i> رفع صور
+              </button>
+              <button type="button" id="pasteImgBtn" class="paste-btn" style="flex:1; padding:10px;">
+                <i class="fas fa-paste"></i> لصق صورة
+              </button>
+            </div>
+            <input type="file" id="newImgsFiles" accept="image/*" multiple style="display:none;">
+            
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <input type="text" id="newImgUrlInput" class="admin-input" placeholder="أو ضع رابط صورة هنا..." style="margin-bottom:0;">
+              <button type="button" id="addImgUrlBtn" class="admin-btn" style="padding:0 15px; white-space:nowrap;">إضافة</button>
+            </div>
+            
+            <div id="galleryPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
           </div>
-          <input type="file" id="newImgFile" accept="image/*" style="display:none;">
+
+          <div id="newSizesContainer" style="margin-top:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);"></div>
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">أو رابط الصورة</label>
-          <input type="text" id="newImgUrl" class="admin-input" placeholder="https://...">
-          
-          <img id="newImgPreview" style="display:none;width:100px;height:130px;object-fit:cover;border-radius:12px;margin:10px 0;border:2px solid var(--border-color);">
-          
-          <button id="addProductBtn" class="admin-btn" style="width:100%;justify-content:center;">
+          <button id="addProductBtn" class="admin-btn" style="width:100%;justify-content:center; margin-top:20px; padding:15px;">
             <i class="fas fa-plus"></i> إضافة المنتج
           </button>
         </div>
@@ -1496,17 +1535,47 @@ function showAdminDashboard() {
     showToast('تم حفظ الإعدادات');
   };
   
-  let pendingImgData = null;
-  overlay.querySelector('#uploadImgBtn').onclick = () => overlay.querySelector('#newImgFile').click();
-  overlay.querySelector('#newImgFile').onchange = async (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    pendingImgData = await fileToBase64(f);
-    const prev = overlay.querySelector('#newImgPreview');
-    prev.src = pendingImgData;
-    prev.style.display = 'block';
-  };
+  let galleryImages = []; 
   
+  function renderGalleryPreview() {
+    const prev = overlay.querySelector('#galleryPreview');
+    if (!prev) return;
+    prev.innerHTML = galleryImages.map((src, i) => `
+      <div style="position:relative; width:60px; height:75px; border-radius:8px; overflow:hidden; border:1px solid var(--border-color);">
+        <img src="${escapeHtml(src)}" style="width:100%; height:100%; object-fit:cover;">
+        <button type="button" onclick="window.__removeGalleryImg(${i})" style="position:absolute; top:2px; left:2px; background:rgba(231,76,60,0.9); color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:0.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>
+      </div>
+    `).join('');
+  }
+
+  window.__removeGalleryImg = (idx) => {
+    galleryImages.splice(idx, 1);
+    renderGalleryPreview();
+  };
+
+  overlay.querySelector('#uploadImgsBtn').onclick = () => overlay.querySelector('#newImgsFiles').click();
+  overlay.querySelector('#newImgsFiles').onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    for (let f of files) {
+      if (f.type.startsWith('image/')) {
+        const base64 = await fileToBase64(f);
+        galleryImages.push(base64);
+      }
+    }
+    renderGalleryPreview();
+    e.target.value = ''; 
+  };
+
+  overlay.querySelector('#addImgUrlBtn').onclick = () => {
+    const input = overlay.querySelector('#newImgUrlInput');
+    const url = input.value.trim();
+    if (url) {
+      galleryImages.push(url);
+      input.value = '';
+      renderGalleryPreview();
+    }
+  };
+
   overlay.querySelector('#pasteImgBtn').onclick = () => {
     showToast('الصق الصورة بـ Ctrl+V');
     const handler = async (e) => {
@@ -1514,10 +1583,9 @@ function showAdminDashboard() {
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.startsWith('image/')) {
           const f = items[i].getAsFile();
-          pendingImgData = await fileToBase64(f);
-          const prev = overlay.querySelector('#newImgPreview');
-          prev.src = pendingImgData;
-          prev.style.display = 'block';
+          const base64 = await fileToBase64(f);
+          galleryImages.push(base64);
+          renderGalleryPreview();
           showToast('تم لصق الصورة');
           document.removeEventListener('paste', handler);
           break;
@@ -1528,35 +1596,56 @@ function showAdminDashboard() {
     setTimeout(() => document.removeEventListener('paste', handler), 10000);
   };
 
-  // دالة بتحدث قائمة المقاسات حسب الفئة المختارة
   const categorySelect = overlay.querySelector('#newCategory');
-  const sizesContainer = document.createElement('div');
-  sizesContainer.id = 'newSizesContainer';
-  sizesContainer.style.marginBottom = '15px';
-  
-  categorySelect.parentElement.parentElement.parentElement.insertBefore(sizesContainer, categorySelect.parentElement.parentElement.nextSibling);
+  const sizesContainer = overlay.querySelector('#newSizesContainer');
 
   function updateAdminSizes() {
     const cat = categorySelect.value;
     let sizesList = [];
-    // المقاسات الجديدة
     if (cat === 'tshirts') sizesList = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
     else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
     else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
-    let html = `<label style="font-weight:700;font-size:0.9rem;margin-bottom:8px;display:block;">المقاسات المتوفرة والكميات:</label>`;
-    html += `<div style="display:flex;flex-wrap:wrap;gap:10px;background:var(--bg-body);padding:15px;border-radius:12px;border:1px solid var(--border-color);">`;
+    let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> إدارة المقاسات والألوان والأسعار:</label>`;
     
     sizesList.forEach(size => {
       html += `
-        <div style="display:flex;align-items:center;gap:5px;background:var(--card-bg);padding:5px 10px;border-radius:8px;border:1px solid var(--border-color);">
-          <input type="checkbox" id="size_chk_${size}" value="${size}" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
-          <label for="size_chk_${size}" style="font-weight:700;font-size:0.9rem;cursor:pointer;margin:0;">${size}</label>
-          <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px;padding:4px;border-radius:4px;border:1px solid var(--border-color);text-align:center;font-size:0.85rem;" placeholder="الكمية">
+        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border-color); padding-bottom:8px; margin-bottom:8px;">
+            <strong style="font-size:1rem;">مقاس: ${size}</strong>
+            <div style="display:flex; gap:10px; align-items:center;">
+               <label style="font-size:0.85rem; font-weight:700;">السعر:</label>
+               <input type="number" id="size_price_${size}" value="0" placeholder="سعر المقاس" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
+            </div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <input type="checkbox" id="size_chk_${size}" value="${size}" checked style="width:16px;height:16px;accent-color:var(--accent);">
+              <span style="font-size:0.85rem;">متوفر</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <label style="font-size:0.85rem;">الكمية:</label>
+              <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
+            </div>
+            
+            <div style="width:100%; margin-top:5px; display:flex; gap:10px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:4px;">
+                <input type="checkbox" id="size_${size}_color_black" value="أسود" checked> <span style="font-size:0.8rem;">أسود</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <input type="checkbox" id="size_${size}_color_white" value="أبيض" checked> <span style="font-size:0.8rem;">أبيض</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <input type="checkbox" id="size_${size}_color_blue" value="أزرق"> <span style="font-size:0.8rem;">أزرق</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <input type="checkbox" id="size_${size}_color_red" value="أحمر"> <span style="font-size:0.8rem;">أحمر</span>
+              </div>
+            </div>
+          </div>
         </div>
       `;
     });
-    html += `</div>`;
     sizesContainer.innerHTML = html;
   }
 
@@ -1565,18 +1654,17 @@ function showAdminDashboard() {
   
   overlay.querySelector('#addProductBtn').onclick = async () => {
     const name = overlay.querySelector('#newName').value.trim();
-    const price = parseFloat(overlay.querySelector('#newPrice').value);
-    const offerPrice = overlay.querySelector('#newOfferPrice').value ? parseFloat(overlay.querySelector('#newOfferPrice').value) : null;
     const category = overlay.querySelector('#newCategory').value;
     const desc = overlay.querySelector('#newDesc').value.trim();
-    const imgUrl = overlay.querySelector('#newImgUrl').value.trim();
-    const imgData = pendingImgData || imgUrl;
     
-    if (!name || isNaN(price)) { showToast('أدخل الاسم والسعر'); return; }
+    if (!name) { showToast('أدخل اسم المنتج'); return; }
+    if (galleryImages.length === 0) { showToast('أضف صورة واحدة على الأقل'); return; }
     
-    const selectedSizes = [];
-    const sizeQuantities = {};
-    
+    const sizeMatrix = {}; 
+    const allAvailableColors = new Set();
+    let mainPrice = Infinity;
+    let isAnySizeAvail = false;
+
     let sizesListToCheck = [];
     if (category === 'tshirts') sizesListToCheck = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
     else if (category === 'pants') sizesListToCheck = ['28', '30', '32', '34', '36', '38', '40', '42'];
@@ -1584,24 +1672,53 @@ function showAdminDashboard() {
 
     sizesListToCheck.forEach(size => {
       const chk = overlay.querySelector(`#size_chk_${size}`);
-      const qtyInput = overlay.querySelector(`#size_qty_${size}`);
       if (chk && chk.checked) {
-        selectedSizes.push(size);
-        sizeQuantities[size] = parseInt(qtyInput.value) || 0;
+        const qty = parseInt(overlay.querySelector(`#size_qty_${size}`).value) || 0;
+        const price = parseFloat(overlay.querySelector(`#size_price_${size}`).value) || 0;
+        
+        if (price < mainPrice && price > 0) mainPrice = price;
+        if (mainPrice === Infinity) mainPrice = price;
+        
+        const colorsForSize = [];
+        ['black', 'white', 'blue', 'red'].forEach(c => {
+          const cchk = overlay.querySelector(`#size_${size}_color_${c}`);
+          if (cchk && cchk.checked) {
+             const cName = cchk.value;
+             colorsForSize.push(cName);
+             allAvailableColors.add(cName);
+          }
+        });
+        
+        sizeMatrix[size] = { qty, price, colors: colorsForSize };
+        if (qty > 0) isAnySizeAvail = true;
       }
     });
 
-    if (selectedSizes.length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
+    if (Object.keys(sizeMatrix).length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
+    if (mainPrice === Infinity) mainPrice = 0;
 
     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
     
+    const colorsArray = Array.from(allAvailableColors).map(c => ({ name: c, hex: colorHexMap[c] || '#cccccc' }));
+
     products.push({
-      id: newId, name, category, price, offerPrice,
-      image: imgData || '', gallery: [], description: desc,
-      sizes: selectedSizes,
-      sizeQuantities: sizeQuantities,
-      colors: [{name:'أسود',hex:'#1a1a1a'},{name:'أبيض',hex:'#ffffff'}],
-      isFeatured: false, isNew: true, ratings: [], avgRating: 0, totalRatings: 0, isAvailable: true
+      id: newId, 
+      name, 
+      category, 
+      price: mainPrice, 
+      offerPrice: null,
+      image: galleryImages[0], 
+      gallery: galleryImages, 
+      description: desc,
+      sizes: Object.keys(sizeMatrix),
+      sizeMatrix: sizeMatrix, 
+      colors: colorsArray.length > 0 ? colorsArray : [{name:'أسود',hex:'#1a1a1a'}],
+      isFeatured: false, 
+      isNew: true, 
+      ratings: [], 
+      avgRating: 0, 
+      totalRatings: 0, 
+      isAvailable: isAnySizeAvail
     });
     
     const btn = overlay.querySelector('#addProductBtn');
@@ -1611,16 +1728,16 @@ function showAdminDashboard() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-plus"></i> إضافة المنتج';
     
-    pendingImgData = null;
+    galleryImages = [];
+    renderGalleryPreview();
     overlay.querySelector('#newName').value = '';
-    overlay.querySelector('#newPrice').value = '';
-    overlay.querySelector('#newImgPreview').style.display = 'none';
+    overlay.querySelector('#newDesc').value = '';
     
     renderProductsAdmin();
     renderProducts();
     renderFeatured();
     renderNewArrivals();
-    showToast('تم إضافة المنتج');
+    showToast('تم إضافة المنتج بنجاح');
   };
   
   overlay.querySelector('#addOfferBtn').onclick = async () => {
@@ -1858,9 +1975,6 @@ async function init() {
   renderCart();
   updateCartCount();
   
-  // =====================================================
-  // إعداد القائمة الجانبية (Drawer جديد)
-  // =====================================================
   const drawer = document.getElementById('mobileDrawer');
   const drawerOverlay = document.getElementById('drawerOverlay');
   const drawerCloseBtn = document.getElementById('drawerCloseBtn');
@@ -1941,7 +2055,6 @@ async function init() {
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
   
-  // ربط باقي الأزرار
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });
