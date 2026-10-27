@@ -1183,18 +1183,29 @@ function showConfirm(msg, onYes) {
   const msgEl = document.getElementById('confirmMessage');
   const yesBtn = document.getElementById('confirmYesBtn');
   const noBtn = document.getElementById('confirmNoBtn');
-  if (!modal) return;
+  
+  if (!modal || !msgEl || !yesBtn || !noBtn) {
+    console.error('Confirm modal elements not found');
+    if (confirm(msg)) onYes && onYes();
+    return;
+  }
   
   msgEl.textContent = msg;
   modal.classList.add('show');
   
-  const ny = yesBtn.cloneNode(true);
-  const nn = noBtn.cloneNode(true);
-  yesBtn.parentNode.replaceChild(ny, yesBtn);
-  noBtn.parentNode.replaceChild(nn, noBtn);
+  // إزالة أي events قديمة
+  const newYesBtn = yesBtn.cloneNode(true);
+  const newNoBtn = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+  noBtn.parentNode.replaceChild(newNoBtn, noBtn);
   
-  ny.onclick = () => { modal.classList.remove('show'); onYes && onYes(); };
-  nn.onclick = () => modal.classList.remove('show');
+  newYesBtn.onclick = () => { 
+    modal.classList.remove('show'); 
+    if (onYes) onYes(); 
+  };
+  newNoBtn.onclick = () => { 
+    modal.classList.remove('show'); 
+  };
 }
 
 // =====================================================
@@ -1798,7 +1809,12 @@ function showAdminDashboard() {
   // =====================================================
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
-    if (products.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; return; }
+    if (!cont) return;
+    
+    if (products.length === 0) { 
+      cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; 
+      return; 
+    }
     
     cont.innerHTML = products.map(p => `
       <div class="admin-product-row">
@@ -1814,28 +1830,49 @@ function showAdminDashboard() {
       </div>
     `).join('');
     
+    // ربط زرار الحذف
     cont.querySelectorAll('[data-del]').forEach(btn => {
-      btn.onclick = () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const id = parseInt(btn.dataset.del);
+        console.log('Deleting product ID:', id);
+        
         showConfirm('حذف المنتج نهائياً؟', async () => {
+          console.log('Confirmed delete for ID:', id);
+          
+          const productToDelete = products.find(p => p.id === id);
+          if (!productToDelete) {
+            showToast('❌ المنتج غير موجود');
+            return;
+          }
+          
           products = products.filter(p => p.id !== id);
+          
           const saved = await saveStoreData();
           if (saved) {
             renderProductsAdmin();
             renderProducts();
             renderFeatured();
             renderNewArrivals();
-            showToast('✅ تم الحذف');
+            renderFavorites();
+            showToast('✅ تم الحذف بنجاح');
+          } else {
+            showToast('❌ فشل الحذف — تحقق من الاتصال');
           }
         });
-      };
+      });
     });
 
+    // ربط زرار التعديل
     cont.querySelectorAll('[data-edit]').forEach(btn => {
-      btn.onclick = () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const id = parseInt(btn.dataset.edit);
         openEditProductModal(id);
-      };
+      });
     });
   }
 
