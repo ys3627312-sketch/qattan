@@ -1173,39 +1173,10 @@ async function renderCustomerOrders() {
 // =====================================================
 // Modals
 // =====================================================
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('show');
-}
-
 function showConfirm(msg, onYes) {
-  const modal = document.getElementById('customConfirmModal');
-  const msgEl = document.getElementById('confirmMessage');
-  const yesBtn = document.getElementById('confirmYesBtn');
-  const noBtn = document.getElementById('confirmNoBtn');
-  
-  if (!modal || !msgEl || !yesBtn || !noBtn) {
-    console.error('Confirm modal elements not found');
-    if (confirm(msg)) onYes && onYes();
-    return;
+  if (window.confirm(msg)) {
+    if (onYes) onYes();
   }
-  
-  msgEl.textContent = msg;
-  modal.classList.add('show');
-  
-  // إزالة أي events قديمة
-  const newYesBtn = yesBtn.cloneNode(true);
-  const newNoBtn = noBtn.cloneNode(true);
-  yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
-  noBtn.parentNode.replaceChild(newNoBtn, noBtn);
-  
-  newYesBtn.onclick = () => { 
-    modal.classList.remove('show'); 
-    if (onYes) onYes(); 
-  };
-  newNoBtn.onclick = () => { 
-    modal.classList.remove('show'); 
-  };
 }
 
 // =====================================================
