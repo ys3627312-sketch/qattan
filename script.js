@@ -274,10 +274,10 @@ function applyStoreConfig() {
   const phone = document.getElementById('footerPhone');
   if (phone) phone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
   
-  // تحديث زرار الواتساب
+  // إصلاح زرار الواتساب — بيشتغل حتى لو Firebase محظور
   const waFab = document.getElementById('whatsappFab');
   if (waFab) {
-    const rawPhone = storeConfig.phone || '201225899225'; 
+    const rawPhone = storeConfig.phone || '201225899225';
     let num = String(rawPhone).replace(/[^0-9]/g, '');
     if (num && !num.startsWith('20')) num = '20' + num.replace(/^0+/, '');
     
@@ -285,6 +285,9 @@ function applyStoreConfig() {
     waFab.target = '_blank';
     waFab.rel = 'noopener noreferrer';
   }
+  
+  const drawerPhone = document.getElementById('drawerPhone');
+  if (drawerPhone) drawerPhone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
   
   const footerText = document.getElementById('footerText');
   if (footerText) {
@@ -295,7 +298,7 @@ function applyStoreConfig() {
 // =====================================================
 // عرض المنتجات
 // =====================================================
-const categoryLabels = { men: 'رجالي', women: 'حريمي', kids: 'أحذية', all: 'الكل' };
+const categoryLabels = { men: 'رجالي', women: 'حريمي', shoes: 'أحذية', all: 'الكل' };
 
 function getFilteredProducts() {
   let list = [...products];
@@ -680,9 +683,18 @@ function renderProductDetails(id) {
             </button>
           </div>
           <div class="size-selector">
-            ${p.sizes.map((s, i) => `
-              <button class="size-pill ${i === 0 ? 'selected' : ''}" data-size="${escapeHtml(s)}">${escapeHtml(s)}</button>
-            `).join('')}
+            ${p.sizes.map((s, i) => {
+              const qty = p.sizeQuantities ? (p.sizeQuantities[s] || 0) : 999;
+              const isOut = qty <= 0;
+              const isFirstAvailable = !isOut && i === 0;
+              return `
+                <button class="size-pill ${isFirstAvailable ? 'selected' : ''} ${isOut ? 'out-of-stock' : ''}" 
+                        data-size="${escapeHtml(s)}" ${isOut ? 'disabled' : ''}>
+                  ${escapeHtml(s)}
+                  ${isOut ? '<br><small style="font-size:0.65rem;">نفذ</small>' : ''}
+                </button>
+              `;
+            }).join('')}
           </div>
         </div>
       ` : ''}
@@ -726,11 +738,19 @@ function renderProductDetails(id) {
     </div>
   `;
   
-  let selSize = p.sizes?.[0] || null;
+  // اختيار أول مقاس متاح كبداية
+  let selSize = null;
+  if (p.sizes) {
+    for (let s of p.sizes) {
+      const qty = p.sizeQuantities ? (p.sizeQuantities[s] || 0) : 999;
+      if (qty > 0) { selSize = s; break; }
+    }
+  }
   let selColor = p.colors?.[0] || null;
   
   container.querySelectorAll('.size-pill').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       container.querySelectorAll('.size-pill').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       selSize = btn.dataset.size;
@@ -796,6 +816,15 @@ function addToCart(product, qty = 1, size = null, color = null) {
   if (product.isAvailable === false) {
     showToast('هذا المنتج غير متوفر');
     return;
+  }
+  
+  // فحص الكمية المتاحة للمقاس
+  if (size && product.sizeQuantities) {
+    const available = product.sizeQuantities[size] || 0;
+    if (available <= 0) {
+      showToast('هذا المقاس غير متوفر');
+      return;
+    }
   }
   
   const variantKey = `${product.id}_${size || ''}_${color?.name || ''}`;
@@ -1350,7 +1379,7 @@ function showAdminDashboard() {
               <select id="newCategory" class="admin-input">
                 <option value="men">رجالي</option>
                 <option value="women">حريمي</option>
-                <option value="kids">أحذية</option>
+                <option value="shoes">أحذية</option>
               </select>
             </div>
           </div>
@@ -1433,7 +1462,7 @@ function showAdminDashboard() {
   `;
   document.body.appendChild(overlay);
   
-  // ✅ زرار الخروج — signOut نظيف + رجوع السكرول
+  // زرار الخروج — signOut نظيف + رجوع السكرول
   overlay.querySelector('#closeAdminDash').onclick = async () => {
     try { await signOut(auth); } catch(e) {}
     closeAdminDashboard();
@@ -1502,6 +1531,40 @@ function showAdminDashboard() {
     document.addEventListener('paste', handler);
     setTimeout(() => document.removeEventListener('paste', handler), 10000);
   };
+
+  // دالة بتحدث قائمة المقاسات حسب الفئة المختارة
+  const categorySelect = overlay.querySelector('#newCategory');
+  const sizesContainer = document.createElement('div');
+  sizesContainer.id = 'newSizesContainer';
+  sizesContainer.style.marginBottom = '15px';
+  
+  categorySelect.parentElement.parentElement.parentElement.insertBefore(sizesContainer, categorySelect.parentElement.parentElement.nextSibling);
+
+  function updateAdminSizes() {
+    const cat = categorySelect.value;
+    let sizesList = [];
+    if (cat === 'men') sizesList = ['S', 'M', 'L', 'XL', 'XXL'];
+    else if (cat === 'women') sizesList = ['XS', 'S', 'M', 'L', 'XL'];
+    else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
+
+    let html = `<label style="font-weight:700;font-size:0.9rem;margin-bottom:8px;display:block;">المقاسات المتوفرة والكميات:</label>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:10px;background:var(--bg-body);padding:15px;border-radius:12px;border:1px solid var(--border-color);">`;
+    
+    sizesList.forEach(size => {
+      html += `
+        <div style="display:flex;align-items:center;gap:5px;background:var(--card-bg);padding:5px 10px;border-radius:8px;border:1px solid var(--border-color);">
+          <input type="checkbox" id="size_chk_${size}" value="${size}" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
+          <label for="size_chk_${size}" style="font-weight:700;font-size:0.9rem;cursor:pointer;margin:0;">${size}</label>
+          <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px;padding:4px;border-radius:4px;border:1px solid var(--border-color);text-align:center;font-size:0.85rem;" placeholder="الكمية">
+        </div>
+      `;
+    });
+    html += `</div>`;
+    sizesContainer.innerHTML = html;
+  }
+
+  categorySelect.addEventListener('change', updateAdminSizes);
+  updateAdminSizes(); // تشغيلها أول مرة
   
   overlay.querySelector('#addProductBtn').onclick = async () => {
     const name = overlay.querySelector('#newName').value.trim();
@@ -1514,13 +1577,34 @@ function showAdminDashboard() {
     
     if (!name || isNaN(price)) { showToast('أدخل الاسم والسعر'); return; }
     
-    const sizesMap = { men: ['S','M','L','XL','XXL'], women: ['XS','S','M','L','XL'], kids: ['38','39','40','41','42','43','44','45'] };
+    // قراءة المقاسات والكميات اللي الأدمن اختارها
+    const selectedSizes = [];
+    const sizeQuantities = {};
+    
+    let sizesListToCheck = [];
+    if (category === 'men') sizesListToCheck = ['S', 'M', 'L', 'XL', 'XXL'];
+    else if (category === 'women') sizesListToCheck = ['XS', 'S', 'M', 'L', 'XL'];
+    else if (category === 'shoes') sizesListToCheck = ['38', '39', '40', '41', '42', '43', '44', '45'];
+
+    sizesListToCheck.forEach(size => {
+      const chk = overlay.querySelector(`#size_chk_${size}`);
+      const qtyInput = overlay.querySelector(`#size_qty_${size}`);
+      if (chk && chk.checked) {
+        selectedSizes.push(size);
+        sizeQuantities[size] = parseInt(qtyInput.value) || 0;
+      }
+    });
+
+    if (selectedSizes.length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
+
     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
     
     products.push({
       id: newId, name, category, price, offerPrice,
       image: imgData || '', gallery: [], description: desc,
-      sizes: sizesMap[category] || [], colors: [{name:'أسود',hex:'#1a1a1a'},{name:'أبيض',hex:'#ffffff'}],
+      sizes: selectedSizes,
+      sizeQuantities: sizeQuantities,
+      colors: [{name:'أسود',hex:'#1a1a1a'},{name:'أبيض',hex:'#ffffff'}],
       isFeatured: false, isNew: true, ratings: [], avgRating: 0, totalRatings: 0, isAvailable: true
     });
     
@@ -1761,20 +1845,30 @@ function showAdminDashboard() {
 // Init
 // =====================================================
 async function init() {
+  document.body.style.overflow = 'auto';
+  
+  loadLocalState();
+  getClientId();
+  setupDarkMode();
+  setupPhoneInput();
+  populateAreas();
+  setupScrollTop();
+  
+  await loadStoreData();
+  
+  applyStoreConfig();
+  renderFeatured();
+  renderProducts();
+  renderCart();
+  updateCartCount();
+  
   // =====================================================
   // إعداد القائمة الجانبية (Drawer جديد)
   // =====================================================
   const drawer = document.getElementById('mobileDrawer');
   const drawerOverlay = document.getElementById('drawerOverlay');
   const drawerCloseBtn = document.getElementById('drawerCloseBtn');
-  const drawerPanel = document.getElementById('drawerPanel');
   const menuToggle = document.getElementById('menuToggle');
-  const drawerStoreName = document.getElementById('drawerStoreName');
-  const drawerPhone = document.getElementById('drawerPhone');
-
-  // تحديث اسم المتجر والهاتف في الـ drawer
-  if (drawerStoreName) drawerStoreName.textContent = storeConfig.name;
-  if (drawerPhone) drawerPhone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
 
   function openDrawer() {
     if (!drawer) return;
@@ -1801,7 +1895,6 @@ async function init() {
   if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
   if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
 
-  // أزرار الـ drawer
   document.querySelectorAll('.drawer-nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1809,14 +1902,11 @@ async function init() {
       const pageId = btn.dataset.drawerPage;
       if (!pageId) return;
       
-      // تحديث الحالة النشطة
       document.querySelectorAll('.drawer-nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
-      // اقفل الدراور
       closeDrawer();
       
-      // انتقل للصفحة
       setTimeout(() => {
         showPage(pageId);
         window.history.pushState({ page: pageId }, '', window.location.href);
@@ -1825,7 +1915,6 @@ async function init() {
     });
   });
 
-  // ربط أزرار النافبار القديمة (لو موجودة على الديسكتوب)
   document.querySelectorAll('.nav-links .nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1837,7 +1926,6 @@ async function init() {
     });
   });
 
-  // زرار الرجوع
   window.addEventListener('popstate', (e) => {
     if (drawer && drawer.classList.contains('open')) {
       closeDrawer();
@@ -1862,14 +1950,28 @@ async function init() {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });
   document.getElementById('heroNewBtn')?.addEventListener('click', () => {
-    navigateToPage('new');
+    showPage('new');
+    window.history.pushState({ page: 'new' }, '', window.location.href);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
   
   document.querySelectorAll('.section-link[data-page]').forEach(l => {
-    l.addEventListener('click', (e) => { e.preventDefault(); navigateToPage(l.dataset.page); });
+    l.addEventListener('click', (e) => { 
+      e.preventDefault(); 
+      const pid = l.dataset.page;
+      showPage(pid);
+      window.history.pushState({ page: pid }, '', window.location.href);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   });
   document.querySelectorAll('.breadcrumbs a[data-page]').forEach(l => {
-    l.addEventListener('click', (e) => { e.preventDefault(); navigateToPage(l.dataset.page); });
+    l.addEventListener('click', (e) => { 
+      e.preventDefault(); 
+      const pid = l.dataset.page;
+      showPage(pid);
+      window.history.pushState({ page: pid }, '', window.location.href);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   });
   
   document.querySelectorAll('.cat-pill').forEach(btn => {

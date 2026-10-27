@@ -2382,3 +2382,15 @@ body.admin-open .whatsapp-fab {
   font-weight: 700;
   cursor: pointer;
 }
+.size-pill.out-of-stock {
+  opacity: 0.4;
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.size-pill.out-of-stock small {
+  text-decoration: none;
+  display: inline-block;
+}
