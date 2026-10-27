@@ -1,11 +1,11 @@
-// =====================================================
+ر// =====================================================
 // QATTAN — Store Script (Firebase Edition)
 // =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc,
-  collection, addDoc, getDocs, updateDoc, deleteDoc,
+  collection, addDoc, getDocs, updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -27,7 +27,6 @@ let products = [];
 let offers = [];
 let cart = [];
 let favorites = [];
-let orders = [];
 
 let currentCategory = 'tshirts';
 let currentSearchQuery = '';
@@ -47,7 +46,6 @@ const STORAGE_KEYS = {
 
 const MAX_QTY = 10;
 
-// قائمة الألوان المتاحة
 const AVAILABLE_COLORS = [
   { id: 'black', name: 'أسود', hex: '#1a1a1a' },
   { id: 'white', name: 'أبيض', hex: '#ffffff' },
@@ -82,15 +80,27 @@ function getClientId() {
 }
 
 // =====================================================
-// أدوات مساعدة
+// أدوات مساعدة (ضغط الصور)
 // =====================================================
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-  });
+async function fileToCompressedBase64(file) {
+  try {
+    const options = {
+      maxSizeMB: 0.2, // 200 كيلوبايت كحد أقصى
+      maxWidthOrHeight: 800, // أقصى عرض/طول 800 بكسل
+      useWebWorker: true,
+    };
+    const compressedFile = await imageCompression(file, options);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(compressedFile);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+    });
+  } catch (error) {
+    console.error('Error compressing image:', error);
+    throw error;
+  }
 }
 
 function escapeHtml(str) {
@@ -191,8 +201,8 @@ async function saveStoreData() {
     let msg = 'فشل الحفظ في Firebase';
     if (e.code === 'permission-denied') {
       msg = 'غير مصرح بالحفظ — سجل دخول الأدمن تاني';
-    } else if (e.code === 'unavailable') {
-      msg = 'مشكلة في الاتصال — جرب تاني';
+    } else if (e.message && e.message.includes('exceeds the maximum allowed size')) {
+      msg = 'حجم البيانات كبير جداً، يرجى مراجعة الصور المرفوعة.';
     }
     showToast(msg);
     return false;
@@ -804,7 +814,6 @@ function renderProductDetails(id) {
     updatePriceAndColors(selSize);
   }
   
-  // ---- Lightbox للصورة الأساسية ----
   const mainImgEl = document.getElementById('mainImage');
   if (mainImgEl) {
     mainImgEl.style.cursor = 'zoom-in';
@@ -1489,7 +1498,7 @@ function showAdminDashboard() {
           
           <div style="margin-top:20px; margin-bottom:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);">
             <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">
-              <i class="fas fa-images"></i> صور المنتج (يمكنك إضافة عدة صور):
+              <i class="fas fa-images"></i> صور المنتج (يتم ضغطها تلقائياً):
             </label>
             
             <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -1617,7 +1626,7 @@ function showAdminDashboard() {
   };
   
   // =====================================================
-  // إدارة معرض الصور
+  // إدارة معرض الصور (مع الضغط)
   // =====================================================
   let galleryImages = []; 
   
@@ -1640,12 +1649,18 @@ function showAdminDashboard() {
   overlay.querySelector('#uploadImgsBtn').onclick = () => overlay.querySelector('#newImgsFiles').click();
   overlay.querySelector('#newImgsFiles').onchange = async (e) => {
     const files = Array.from(e.target.files);
+    const btn = overlay.querySelector('#uploadImgsBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الضغط...';
+    btn.disabled = true;
+
     for (let f of files) {
       if (f.type.startsWith('image/')) {
-        const base64 = await fileToBase64(f);
+        const base64 = await fileToCompressedBase64(f);
         galleryImages.push(base64);
       }
     }
+    btn.innerHTML = '<i class="fas fa-upload"></i> رفع صور';
+    btn.disabled = false;
     renderGalleryPreview();
     e.target.value = ''; 
   };
@@ -1667,7 +1682,7 @@ function showAdminDashboard() {
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.startsWith('image/')) {
           const f = items[i].getAsFile();
-          const base64 = await fileToBase64(f);
+          const base64 = await fileToCompressedBase64(f);
           galleryImages.push(base64);
           renderGalleryPreview();
           showToast('تم لصق الصورة');
@@ -1986,12 +2001,18 @@ function showAdminDashboard() {
     modal.querySelector('#editUploadImgsBtn').onclick = () => modal.querySelector('#editImgsFiles').click();
     modal.querySelector('#editImgsFiles').onchange = async (e) => {
       const files = Array.from(e.target.files);
+      const btn = modal.querySelector('#editUploadImgsBtn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الضغط...';
+      btn.disabled = true;
+
       for (let f of files) {
         if (f.type.startsWith('image/')) {
-          const base64 = await fileToBase64(f);
+          const base64 = await fileToCompressedBase64(f);
           editGalleryImages.push(base64);
         }
       }
+      btn.innerHTML = '<i class="fas fa-upload"></i> رفع صور';
+      btn.disabled = false;
       renderEditGallery();
       e.target.value = '';
     };
