@@ -29,7 +29,7 @@ let cart = [];
 let favorites = [];
 let orders = [];
 
-let currentCategory = 'men';
+let currentCategory = 'tshirts'; // تم التعديل
 let currentSearchQuery = '';
 let currentSortValue = 'default';
 let lastProductId = null;
@@ -186,7 +186,6 @@ async function loadOrdersFromFirebase(filterType, onlyMyOrders = false) {
     const snap = await getDocs(collection(db, 'orders'));
     let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
     
-    // فلترة طلبات العميل الحالي
     if (onlyMyOrders) {
       const myId = getClientId();
       list = list.filter(o => o.clientId === myId);
@@ -274,7 +273,6 @@ function applyStoreConfig() {
   const phone = document.getElementById('footerPhone');
   if (phone) phone.textContent = (storeConfig.phone || '').replace(/^20/, '0');
   
-  // إصلاح زرار الواتساب — بيشتغل حتى لو Firebase محظور
   const waFab = document.getElementById('whatsappFab');
   if (waFab) {
     const rawPhone = storeConfig.phone || '201225899225';
@@ -298,7 +296,8 @@ function applyStoreConfig() {
 // =====================================================
 // عرض المنتجات
 // =====================================================
-const categoryLabels = { men: 'رجالي', women: 'حريمي', shoes: 'أحذية', all: 'الكل' };
+// تم تعديل الفئات هنا
+const categoryLabels = { tshirts: 'تيشيرتات', pants: 'بناطيل', shoes: 'أحذية', all: 'الكل' };
 
 function getFilteredProducts() {
   let list = [...products];
@@ -738,7 +737,6 @@ function renderProductDetails(id) {
     </div>
   `;
   
-  // اختيار أول مقاس متاح كبداية
   let selSize = null;
   if (p.sizes) {
     for (let s of p.sizes) {
@@ -818,7 +816,6 @@ function addToCart(product, qty = 1, size = null, color = null) {
     return;
   }
   
-  // فحص الكمية المتاحة للمقاس
   if (size && product.sizeQuantities) {
     const available = product.sizeQuantities[size] || 0;
     if (available <= 0) {
@@ -1377,8 +1374,8 @@ function showAdminDashboard() {
             <div>
               <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الفئة</label>
               <select id="newCategory" class="admin-input">
-                <option value="men">رجالي</option>
-                <option value="women">حريمي</option>
+                <option value="tshirts">تيشيرتات</option>
+                <option value="pants">بناطيل</option>
                 <option value="shoes">أحذية</option>
               </select>
             </div>
@@ -1462,7 +1459,6 @@ function showAdminDashboard() {
   `;
   document.body.appendChild(overlay);
   
-  // زرار الخروج — signOut نظيف + رجوع السكرول
   overlay.querySelector('#closeAdminDash').onclick = async () => {
     try { await signOut(auth); } catch(e) {}
     closeAdminDashboard();
@@ -1543,8 +1539,9 @@ function showAdminDashboard() {
   function updateAdminSizes() {
     const cat = categorySelect.value;
     let sizesList = [];
-    if (cat === 'men') sizesList = ['S', 'M', 'L', 'XL', 'XXL'];
-    else if (cat === 'women') sizesList = ['XS', 'S', 'M', 'L', 'XL'];
+    // المقاسات الجديدة
+    if (cat === 'tshirts') sizesList = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+    else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
     else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
     let html = `<label style="font-weight:700;font-size:0.9rem;margin-bottom:8px;display:block;">المقاسات المتوفرة والكميات:</label>`;
@@ -1564,7 +1561,7 @@ function showAdminDashboard() {
   }
 
   categorySelect.addEventListener('change', updateAdminSizes);
-  updateAdminSizes(); // تشغيلها أول مرة
+  updateAdminSizes();
   
   overlay.querySelector('#addProductBtn').onclick = async () => {
     const name = overlay.querySelector('#newName').value.trim();
@@ -1577,13 +1574,12 @@ function showAdminDashboard() {
     
     if (!name || isNaN(price)) { showToast('أدخل الاسم والسعر'); return; }
     
-    // قراءة المقاسات والكميات اللي الأدمن اختارها
     const selectedSizes = [];
     const sizeQuantities = {};
     
     let sizesListToCheck = [];
-    if (category === 'men') sizesListToCheck = ['S', 'M', 'L', 'XL', 'XXL'];
-    else if (category === 'women') sizesListToCheck = ['XS', 'S', 'M', 'L', 'XL'];
+    if (category === 'tshirts') sizesListToCheck = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+    else if (category === 'pants') sizesListToCheck = ['28', '30', '32', '34', '36', '38', '40', '42'];
     else if (category === 'shoes') sizesListToCheck = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
     sizesListToCheck.forEach(size => {
