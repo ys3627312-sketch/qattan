@@ -1,11 +1,11 @@
-ر// =====================================================
+// =====================================================
 // QATTAN — Store Script (Firebase Edition)
 // =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc,
-  collection, addDoc, getDocs, updateDoc,
+  collection, addDoc, getDocs, updateDoc, deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -27,6 +27,7 @@ let products = [];
 let offers = [];
 let cart = [];
 let favorites = [];
+let orders = [];
 
 let currentCategory = 'tshirts';
 let currentSearchQuery = '';
@@ -46,6 +47,7 @@ const STORAGE_KEYS = {
 
 const MAX_QTY = 10;
 
+// قائمة الألوان المتاحة
 const AVAILABLE_COLORS = [
   { id: 'black', name: 'أسود', hex: '#1a1a1a' },
   { id: 'white', name: 'أبيض', hex: '#ffffff' },
@@ -80,13 +82,13 @@ function getClientId() {
 }
 
 // =====================================================
-// أدوات مساعدة (ضغط الصور)
+// أدوات مساعدة
 // =====================================================
 async function fileToCompressedBase64(file) {
   try {
     const options = {
-      maxSizeMB: 0.2, // 200 كيلوبايت كحد أقصى
-      maxWidthOrHeight: 800, // أقصى عرض/طول 800 بكسل
+      maxSizeMB: 0.2,
+      maxWidthOrHeight: 800,
       useWebWorker: true,
     };
     const compressedFile = await imageCompression(file, options);
@@ -99,7 +101,12 @@ async function fileToCompressedBase64(file) {
     });
   } catch (error) {
     console.error('Error compressing image:', error);
-    throw error;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+    });
   }
 }
 
@@ -201,6 +208,8 @@ async function saveStoreData() {
     let msg = 'فشل الحفظ في Firebase';
     if (e.code === 'permission-denied') {
       msg = 'غير مصرح بالحفظ — سجل دخول الأدمن تاني';
+    } else if (e.code === 'unavailable') {
+      msg = 'مشكلة في الاتصال — جرب تاني';
     } else if (e.message && e.message.includes('exceeds the maximum allowed size')) {
       msg = 'حجم البيانات كبير جداً، يرجى مراجعة الصور المرفوعة.';
     }
@@ -1626,7 +1635,7 @@ function showAdminDashboard() {
   };
   
   // =====================================================
-  // إدارة معرض الصور (مع الضغط)
+  // إدارة معرض الصور
   // =====================================================
   let galleryImages = []; 
   
