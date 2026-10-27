@@ -850,9 +850,37 @@ input, select, textarea {
 .product-gallery-main {
   border-radius: 20px;
   overflow: hidden;
-  aspect-ratio: 3/4;
+  aspect-ratio: 4/5;
   background: var(--bg-soft);
   margin-bottom: 12px;
+  max-height: 500px;
+  cursor: zoom-in;
+  position: relative;
+}
+
+.product-gallery-main::after {
+  content: '\f00e';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.product-gallery-main:hover::after {
+  opacity: 1;
 }
 
 .product-gallery-main img {
@@ -2393,4 +2421,80 @@ body.admin-open .whatsapp-fab {
 .size-pill.out-of-stock small {
   text-decoration: none;
   display: inline-block;
+}
+/* ============================================
+   LIGHTBOX — عرض الصورة كاملة
+   ============================================ */
+.lightbox-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  cursor: zoom-out;
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-overlay.show {
+  display: flex;
+  animation: fadeInLightbox 0.25s ease;
+}
+
+@keyframes fadeInLightbox {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lightbox-overlay img {
+  max-width: 95vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: zoomInLightbox 0.25s ease;
+}
+
+@keyframes zoomInLightbox {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease;
+  z-index: 100000;
+}
+
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 768px) {
+  .lightbox-overlay img {
+    max-width: 100vw;
+    max-height: 85vh;
+    border-radius: 8px;
+  }
+  .lightbox-close {
+    top: 12px;
+    left: 12px;
+    width: 40px;
+    height: 40px;
+  }
 }

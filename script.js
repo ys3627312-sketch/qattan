@@ -47,7 +47,7 @@ const STORAGE_KEYS = {
 
 const MAX_QTY = 10;
 
-// قائمة الألوان المتاحة للتعديل والإضافة
+// قائمة الألوان المتاحة
 const AVAILABLE_COLORS = [
   { id: 'black', name: 'أسود', hex: '#1a1a1a' },
   { id: 'white', name: 'أبيض', hex: '#ffffff' },
@@ -64,7 +64,6 @@ const AVAILABLE_COLORS = [
   { id: 'orange', name: 'برتقالي', hex: '#e67e22' }
 ];
 
-// خريطة الألوان لاستخدامها في العرض
 const colorHexMap = AVAILABLE_COLORS.reduce((acc, c) => {
   acc[c.name] = c.hex;
   return acc;
@@ -185,9 +184,18 @@ async function saveStoreData() {
   try {
     const docRef = doc(db, 'storeData', 'main');
     await setDoc(docRef, { storeConfig, products, offers });
+    console.log('✅ Store data saved successfully');
+    return true;
   } catch (e) {
-    console.error('saveStoreData error:', e);
-    showToast('فشل الحفظ في Firebase');
+    console.error('❌ saveStoreData error:', e);
+    let msg = 'فشل الحفظ في Firebase';
+    if (e.code === 'permission-denied') {
+      msg = 'غير مصرح بالحفظ — سجل دخول الأدمن تاني';
+    } else if (e.code === 'unavailable') {
+      msg = 'مشكلة في الاتصال — جرب تاني';
+    }
+    showToast(msg);
+    return false;
   }
 }
 
@@ -796,6 +804,15 @@ function renderProductDetails(id) {
     updatePriceAndColors(selSize);
   }
   
+  // ---- Lightbox للصورة الأساسية ----
+  const mainImgEl = document.getElementById('mainImage');
+  if (mainImgEl) {
+    mainImgEl.style.cursor = 'zoom-in';
+    mainImgEl.addEventListener('click', () => {
+      openLightbox(mainImgEl.src);
+    });
+  }
+  
   container.querySelectorAll('.size-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
@@ -851,11 +868,54 @@ function renderProductDetails(id) {
     p.avgRating = p.ratings.reduce((s, r) => s + r.rating, 0) / p.ratings.length;
     p.totalRatings = p.ratings.length;
     
-    await saveStoreData();
-    showToast('شكراً لتقييمك!');
-    playSound();
-    renderProductDetails(p.id);
+    const saved = await saveStoreData();
+    if (saved) {
+      showToast('شكراً لتقييمك!');
+      playSound();
+      renderProductDetails(p.id);
+    }
   });
+}
+
+// =====================================================
+// Lightbox — عرض الصورة كاملة
+// =====================================================
+function openLightbox(src) {
+  let lightbox = document.getElementById('imageLightbox');
+  
+  if (!lightbox) {
+    lightbox = document.createElement('div');
+    lightbox.id = 'imageLightbox';
+    lightbox.className = 'lightbox-overlay';
+    lightbox.innerHTML = `
+      <button class="lightbox-close" aria-label="إغلاق">
+        <i class="fas fa-times"></i>
+      </button>
+      <img src="" alt="صورة المنتج">
+    `;
+    document.body.appendChild(lightbox);
+    
+    lightbox.querySelector('.lightbox-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      lightbox.classList.remove('show');
+    });
+    
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) {
+        lightbox.classList.remove('show');
+      }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && lightbox.classList.contains('show')) {
+        lightbox.classList.remove('show');
+      }
+    });
+  }
+  
+  const img = lightbox.querySelector('img');
+  if (img) img.src = src;
+  lightbox.classList.add('show');
 }
 
 // =====================================================
@@ -1546,11 +1606,14 @@ function showAdminDashboard() {
     const btn = overlay.querySelector('#saveStoreBtn');
     btn.disabled = true;
     btn.innerHTML = 'جاري الحفظ...';
-    await saveStoreData();
-    applyStoreConfig();
+    const saved = await saveStoreData();
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-save"></i> حفظ الإعدادات';
-    showToast('تم حفظ الإعدادات');
+    
+    if (saved) {
+      applyStoreConfig();
+      showToast('✅ تم حفظ الإعدادات');
+    }
   };
   
   // =====================================================
@@ -1652,7 +1715,6 @@ function showAdminDashboard() {
               <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
             </div>
             
-            <!-- الألوان المتاحة للمقاس ده (توسيع القائمة) -->
             <div style="width:100%; margin-top:8px; display:flex; gap:12px; flex-wrap:wrap;">
               ${AVAILABLE_COLORS.map(c => `
                 <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
@@ -1743,9 +1805,14 @@ function showAdminDashboard() {
     const btn = overlay.querySelector('#addProductBtn');
     btn.disabled = true;
     btn.innerHTML = 'جاري الحفظ...';
-    await saveStoreData();
+    const saved = await saveStoreData();
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-plus"></i> إضافة المنتج';
+    
+    if (!saved) {
+      showToast('❌ فشل حفظ المنتج');
+      return;
+    }
     
     galleryImages = [];
     renderGalleryPreview();
@@ -1756,7 +1823,7 @@ function showAdminDashboard() {
     renderProducts();
     renderFeatured();
     renderNewArrivals();
-    showToast('تم إضافة المنتج بنجاح');
+    showToast('✅ تم إضافة المنتج بنجاح');
   };
   
   overlay.querySelector('#addOfferBtn').onclick = async () => {
@@ -1770,13 +1837,15 @@ function showAdminDashboard() {
     const btn = overlay.querySelector('#addOfferBtn');
     btn.disabled = true;
     btn.innerHTML = 'جاري الحفظ...';
-    await saveStoreData();
+    const saved = await saveStoreData();
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-plus"></i> إضافة العرض';
     
-    renderOffersAdmin();
-    renderOffers();
-    showToast('تم إضافة العرض');
+    if (saved) {
+      renderOffersAdmin();
+      renderOffers();
+      showToast('✅ تم إضافة العرض');
+    }
   };
   
   // =====================================================
@@ -1805,12 +1874,14 @@ function showAdminDashboard() {
         const id = parseInt(btn.dataset.del);
         showConfirm('حذف المنتج نهائياً؟', async () => {
           products = products.filter(p => p.id !== id);
-          await saveStoreData();
-          renderProductsAdmin();
-          renderProducts();
-          renderFeatured();
-          renderNewArrivals();
-          showToast('تم الحذف');
+          const saved = await saveStoreData();
+          if (saved) {
+            renderProductsAdmin();
+            renderProducts();
+            renderFeatured();
+            renderNewArrivals();
+            showToast('✅ تم الحذف');
+          }
         });
       };
     });
@@ -1890,7 +1961,6 @@ function showAdminDashboard() {
     modal.querySelector('#closeEditModal').onclick = () => modal.remove();
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 
-    // إدارة صور التعديل
     let editGalleryImages = [...(p.gallery || [])];
     if (p.image && !editGalleryImages.includes(p.image)) {
       editGalleryImages.unshift(p.image);
@@ -1936,7 +2006,6 @@ function showAdminDashboard() {
       }
     };
 
-    // إدارة مقاسات التعديل
     const editCategorySelect = modal.querySelector('#editProdCategory');
     const editSizesContainer = modal.querySelector('#editSizesContainer');
 
@@ -1947,7 +2016,6 @@ function showAdminDashboard() {
       else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
       else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
-      // مزامنة البيانات القديمة (لو المقاس موجود في المنتج أو لأ)
       let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> المقاسات والأسعار:</label>`;
       
       sizesList.forEach(size => {
@@ -2040,7 +2108,6 @@ function showAdminDashboard() {
 
       const colorsArray = Array.from(allColors).map(c => ({ name: c, hex: colorHexMap[c] || '#cccccc' }));
 
-      // تحديث المنتج في المصفوفة
       const idx = products.findIndex(x => x.id === productId);
       if (idx !== -1) {
         products[idx] = {
@@ -2061,16 +2128,20 @@ function showAdminDashboard() {
       const saveBtn = modal.querySelector('#saveEditBtn');
       saveBtn.disabled = true;
       saveBtn.innerHTML = 'جاري الحفظ...';
-      await saveStoreData();
+      const saved = await saveStoreData();
       saveBtn.disabled = false;
       saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
 
-      modal.remove();
-      renderProductsAdmin();
-      renderProducts();
-      renderFeatured();
-      renderNewArrivals();
-      showToast('تم حفظ التعديلات بنجاح');
+      if (saved) {
+        modal.remove();
+        renderProductsAdmin();
+        renderProducts();
+        renderFeatured();
+        renderNewArrivals();
+        showToast('✅ تم حفظ التعديلات بنجاح');
+      } else {
+        showToast('❌ فشل الحفظ — تحقق من الصلاحيات');
+      }
     };
   }
   
@@ -2098,10 +2169,12 @@ function showAdminDashboard() {
         const id = btn.dataset.del;
         showConfirm('حذف العرض؟', async () => {
           offers = offers.filter(o => o.id !== id);
-          await saveStoreData();
-          renderOffersAdmin();
-          renderOffers();
-          showToast('تم الحذف');
+          const saved = await saveStoreData();
+          if (saved) {
+            renderOffersAdmin();
+            renderOffers();
+            showToast('✅ تم الحذف');
+          }
         });
       };
     });
@@ -2225,9 +2298,14 @@ function showAdminDashboard() {
           
           btn.disabled = true;
           btn.textContent = '...';
-          await saveStoreData();
-          renderReviewsAdmin();
-          showToast('تم إضافة الرد بنجاح');
+          const saved = await saveStoreData();
+          if (saved) {
+            renderReviewsAdmin();
+            showToast('✅ تم إضافة الرد');
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'رد';
+          }
         }
       };
     });
