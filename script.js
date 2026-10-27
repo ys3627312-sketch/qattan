@@ -1173,6 +1173,11 @@ async function renderCustomerOrders() {
 // =====================================================
 // Modals
 // =====================================================
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
 function showConfirm(msg, onYes) {
   if (window.confirm(msg)) {
     if (onYes) onYes();
@@ -1456,6 +1461,12 @@ function showAdminDashboard() {
           
           <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
           <textarea id="newDesc" class="admin-input" rows="3" placeholder="وصف المنتج..."></textarea>
+
+          <!-- خيار وصل حديثاً (إضافة) -->
+          <div style="margin-top: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="newIsNew" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;" checked>
+            <label for="newIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">هل هذا المنتج "وصل حديثاً"؟</label>
+          </div>
           
           <div style="margin-top:20px; margin-bottom:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);">
             <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">
@@ -1665,6 +1676,7 @@ function showAdminDashboard() {
     const name = overlay.querySelector('#newName').value.trim();
     const category = overlay.querySelector('#newCategory').value;
     const desc = overlay.querySelector('#newDesc').value.trim();
+    const isNewProduct = overlay.querySelector('#newIsNew').checked; // قراءة حالة "وصل حديثاً"
     
     if (!name) { showToast('أدخل اسم المنتج'); return; }
     if (galleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
@@ -1722,7 +1734,7 @@ function showAdminDashboard() {
       sizeMatrix: sizeMatrix, 
       colors: colorsArray.length > 0 ? colorsArray : [{name:'أسود',hex:'#1a1a1a'}],
       isFeatured: false, 
-      isNew: true, 
+      isNew: isNewProduct, // التعديل هنا
       ratings: [], 
       avgRating: 0, 
       totalRatings: 0, 
@@ -1781,7 +1793,7 @@ function showAdminDashboard() {
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
     if (!cont) return;
-    
+
     if (products.length === 0) { 
       cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; 
       return; 
@@ -1801,49 +1813,32 @@ function showAdminDashboard() {
       </div>
     `).join('');
     
-    // ربط زرار الحذف
     cont.querySelectorAll('[data-del]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
         const id = parseInt(btn.dataset.del);
-        console.log('Deleting product ID:', id);
-        
         showConfirm('حذف المنتج نهائياً؟', async () => {
-          console.log('Confirmed delete for ID:', id);
-          
-          const productToDelete = products.find(p => p.id === id);
-          if (!productToDelete) {
-            showToast('❌ المنتج غير موجود');
-            return;
-          }
-          
           products = products.filter(p => p.id !== id);
-          
           const saved = await saveStoreData();
           if (saved) {
             renderProductsAdmin();
             renderProducts();
             renderFeatured();
             renderNewArrivals();
-            renderFavorites();
-            showToast('✅ تم الحذف بنجاح');
-          } else {
-            showToast('❌ فشل الحذف — تحقق من الاتصال');
+            showToast('✅ تم الحذف');
           }
         });
-      });
+      };
     });
 
-    // ربط زرار التعديل
     cont.querySelectorAll('[data-edit]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         const id = parseInt(btn.dataset.edit);
         openEditProductModal(id);
-      });
+      };
     });
   }
 
@@ -1879,6 +1874,12 @@ function showAdminDashboard() {
           <div class="form-group">
             <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
             <textarea id="editProdDesc" class="admin-input" rows="3">${escapeHtml(p.description || '')}</textarea>
+          </div>
+
+          <!-- خيار وصل حديثاً (تعديل) -->
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="editIsNew" ${p.isNew ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+            <label for="editIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">هل هذا المنتج "وصل حديثاً"؟</label>
           </div>
 
           <hr style="margin:15px 0; border:none; border-top:1px dashed var(--border-color);">
@@ -2000,6 +2001,7 @@ function showAdminDashboard() {
       const newName = modal.querySelector('#editProdName').value.trim();
       const newCat = editCategorySelect.value;
       const newDesc = modal.querySelector('#editProdDesc').value.trim();
+      const newIsNew = modal.querySelector('#editIsNew').checked; // قراءة حالة "وصل حديثاً"
       
       if (!newName) { showToast('أدخل اسم المنتج'); return; }
       if (editGalleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
@@ -2055,6 +2057,7 @@ function showAdminDashboard() {
           sizes: Object.keys(newSizeMatrix),
           sizeMatrix: newSizeMatrix,
           colors: colorsArray.length > 0 ? colorsArray : [{ name: 'أسود', hex: '#1a1a1a' }],
+          isNew: newIsNew, // التعديل هنا
           isAvailable: anyAvail
         };
       }
