@@ -47,6 +47,29 @@ const STORAGE_KEYS = {
 
 const MAX_QTY = 10;
 
+// قائمة الألوان المتاحة للتعديل والإضافة
+const AVAILABLE_COLORS = [
+  { id: 'black', name: 'أسود', hex: '#1a1a1a' },
+  { id: 'white', name: 'أبيض', hex: '#ffffff' },
+  { id: 'blue', name: 'أزرق', hex: '#3498db' },
+  { id: 'red', name: 'أحمر', hex: '#e74c3c' },
+  { id: 'green', name: 'أخضر', hex: '#27ae60' },
+  { id: 'yellow', name: 'أصفر', hex: '#f1c40f' },
+  { id: 'navy', name: 'كحلي', hex: '#34495e' },
+  { id: 'gray', name: 'رمادي', hex: '#7f8c8d' },
+  { id: 'beige', name: 'بيج', hex: '#d4c4a8' },
+  { id: 'brown', name: 'بني', hex: '#8b5a2b' },
+  { id: 'pink', name: 'وردي', hex: '#e91e63' },
+  { id: 'purple', name: 'بنفسجي', hex: '#9b59b6' },
+  { id: 'orange', name: 'برتقالي', hex: '#e67e22' }
+];
+
+// خريطة الألوان لاستخدامها في العرض
+const colorHexMap = AVAILABLE_COLORS.reduce((acc, c) => {
+  acc[c.name] = c.hex;
+  return acc;
+}, {});
+
 // =====================================================
 // Client ID
 // =====================================================
@@ -287,8 +310,6 @@ function applyStoreConfig() {
 // عرض المنتجات
 // =====================================================
 const categoryLabels = { tshirts: 'تيشيرتات', pants: 'بناطيل', shoes: 'أحذية', all: 'الكل' };
-
-const colorHexMap = { 'أسود': '#1a1a1a', 'أبيض': '#ffffff', 'أزرق': '#3498db', 'أحمر': '#e74c3c', 'أخضر': '#27ae60', 'رمادي': '#7f8c8d' };
 
 function getFilteredProducts() {
   let list = [...products];
@@ -721,7 +742,6 @@ function renderProductDetails(id) {
     </div>
   `;
   
-  // تحديد أول مقاس متاح
   let selSize = null;
   let selColorName = null;
   
@@ -740,7 +760,6 @@ function renderProductDetails(id) {
     if (!p.sizeMatrix || !p.sizeMatrix[selectedSize]) return;
     const matrix = p.sizeMatrix[selectedSize];
     
-    // تحديث السعر
     if (priceDisplay) {
       priceDisplay.innerHTML = `${formatPrice(matrix.price)} ج.م`;
       if (hasOffer && p.offerPrice < p.price) {
@@ -748,7 +767,6 @@ function renderProductDetails(id) {
       }
     }
     
-    // تحديث الألوان
     if (dynamicColors) {
       if (matrix.colors && matrix.colors.length > 0) {
         dynamicColors.innerHTML = matrix.colors.map((cName, i) => `
@@ -1535,6 +1553,9 @@ function showAdminDashboard() {
     showToast('تم حفظ الإعدادات');
   };
   
+  // =====================================================
+  // إدارة معرض الصور
+  // =====================================================
   let galleryImages = []; 
   
   function renderGalleryPreview() {
@@ -1596,6 +1617,9 @@ function showAdminDashboard() {
     setTimeout(() => document.removeEventListener('paste', handler), 10000);
   };
 
+  // =====================================================
+  // إدارة المقاسات والأسعار والألوان (إضافة)
+  // =====================================================
   const categorySelect = overlay.querySelector('#newCategory');
   const sizesContainer = overlay.querySelector('#newSizesContainer');
 
@@ -1628,19 +1652,15 @@ function showAdminDashboard() {
               <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
             </div>
             
-            <div style="width:100%; margin-top:5px; display:flex; gap:10px; flex-wrap:wrap;">
-              <div style="display:flex; align-items:center; gap:4px;">
-                <input type="checkbox" id="size_${size}_color_black" value="أسود" checked> <span style="font-size:0.8rem;">أسود</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <input type="checkbox" id="size_${size}_color_white" value="أبيض" checked> <span style="font-size:0.8rem;">أبيض</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <input type="checkbox" id="size_${size}_color_blue" value="أزرق"> <span style="font-size:0.8rem;">أزرق</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <input type="checkbox" id="size_${size}_color_red" value="أحمر"> <span style="font-size:0.8rem;">أحمر</span>
-              </div>
+            <!-- الألوان المتاحة للمقاس ده (توسيع القائمة) -->
+            <div style="width:100%; margin-top:8px; display:flex; gap:12px; flex-wrap:wrap;">
+              ${AVAILABLE_COLORS.map(c => `
+                <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                  <input type="checkbox" id="size_${size}_color_${c.id}" value="${c.name}" ${c.id === 'black' ? 'checked' : ''}> 
+                  <span style="font-size:0.8rem; display:inline-block; width:12px; height:12px; border-radius:50%; background:${c.hex}; border:1px solid var(--border-color);"></span>
+                  <span style="font-size:0.8rem;">${c.name}</span>
+                </label>
+              `).join('')}
             </div>
           </div>
         </div>
@@ -1680,12 +1700,11 @@ function showAdminDashboard() {
         if (mainPrice === Infinity) mainPrice = price;
         
         const colorsForSize = [];
-        ['black', 'white', 'blue', 'red'].forEach(c => {
-          const cchk = overlay.querySelector(`#size_${size}_color_${c}`);
+        AVAILABLE_COLORS.forEach(c => {
+          const cchk = overlay.querySelector(`#size_${size}_color_${c.id}`);
           if (cchk && cchk.checked) {
-             const cName = cchk.value;
-             colorsForSize.push(cName);
-             allAvailableColors.add(cName);
+             colorsForSize.push(c.name);
+             allAvailableColors.add(c.name);
           }
         });
         
@@ -1760,6 +1779,9 @@ function showAdminDashboard() {
     showToast('تم إضافة العرض');
   };
   
+  // =====================================================
+  // عرض المنتجات في الأدمن (مع زرار التعديل)
+  // =====================================================
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
     if (products.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; return; }
@@ -1771,7 +1793,10 @@ function showAdminDashboard() {
           <strong>${escapeHtml(p.name)}</strong>
           <span>${formatPrice(p.price)} ج.م — ${categoryLabels[p.category]}</span>
         </div>
-        <button class="admin-del-btn" data-del="${p.id}"><i class="fas fa-trash"></i> حذف</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+          <button class="admin-edit-btn" data-edit="${p.id}" style="background:var(--accent-soft); color:var(--text-color); border:1px solid var(--border-color); padding:8px 16px; border-radius:50px; font-weight:700; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><i class="fas fa-edit"></i> تعديل</button>
+          <button class="admin-del-btn" data-del="${p.id}"><i class="fas fa-trash"></i> حذف</button>
+        </div>
       </div>
     `).join('');
     
@@ -1789,6 +1814,264 @@ function showAdminDashboard() {
         });
       };
     });
+
+    cont.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.onclick = () => {
+        const id = parseInt(btn.dataset.edit);
+        openEditProductModal(id);
+      };
+    });
+  }
+
+  // =====================================================
+  // فتح صفحة تعديل المنتج
+  // =====================================================
+  function openEditProductModal(productId) {
+    const p = products.find(x => x.id === productId);
+    if (!p) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.style.zIndex = '100000';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width:700px; max-height:90vh; overflow-y:auto;">
+        <div class="modal-header" style="position:sticky; top:0; background:var(--card-bg); z-index:2;">
+          <h3><i class="fas fa-edit"></i> تعديل المنتج: ${escapeHtml(p.name)}</h3>
+          <span class="modal-close" id="closeEditModal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم المنتج</label>
+            <input type="text" id="editProdName" class="admin-input" value="${escapeHtml(p.name)}">
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الفئة</label>
+            <select id="editProdCategory" class="admin-input">
+              <option value="tshirts" ${p.category === 'tshirts' ? 'selected' : ''}>تيشيرتات</option>
+              <option value="pants" ${p.category === 'pants' ? 'selected' : ''}>بناطيل</option>
+              <option value="shoes" ${p.category === 'shoes' ? 'selected' : ''}>أحذية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
+            <textarea id="editProdDesc" class="admin-input" rows="3">${escapeHtml(p.description || '')}</textarea>
+          </div>
+
+          <hr style="margin:15px 0; border:none; border-top:1px dashed var(--border-color);">
+
+          <div style="margin-top:15px; margin-bottom:15px;">
+            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">صور المنتج:</label>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <button type="button" id="editUploadImgsBtn" class="upload-btn" style="flex:1; padding:10px;">
+                <i class="fas fa-upload"></i> رفع صور
+              </button>
+              <input type="file" id="editImgsFiles" accept="image/*" multiple style="display:none;">
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <input type="text" id="editImgUrlInput" class="admin-input" placeholder="أو ضع رابط صورة..." style="margin-bottom:0;">
+              <button type="button" id="editAddImgUrlBtn" class="admin-btn" style="padding:0 15px;">إضافة</button>
+            </div>
+            <div id="editGalleryPreview" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+          </div>
+
+          <hr style="margin:15px 0; border:none; border-top:1px dashed var(--border-color);">
+          
+          <div id="editSizesContainer" style="margin-top:15px;"></div>
+        </div>
+        <div class="modal-footer" style="position:sticky; bottom:0; background:var(--card-bg); z-index:2;">
+          <button id="saveEditBtn" class="admin-btn" style="width:100%; justify-content:center; padding:14px;">
+            <i class="fas fa-save"></i> حفظ التعديلات
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#closeEditModal').onclick = () => modal.remove();
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+    // إدارة صور التعديل
+    let editGalleryImages = [...(p.gallery || [])];
+    if (p.image && !editGalleryImages.includes(p.image)) {
+      editGalleryImages.unshift(p.image);
+    }
+
+    function renderEditGallery() {
+      const prev = modal.querySelector('#editGalleryPreview');
+      if (!prev) return;
+      prev.innerHTML = editGalleryImages.map((src, i) => `
+        <div style="position:relative; width:60px; height:75px; border-radius:8px; overflow:hidden; border:1px solid var(--border-color);">
+          <img src="${escapeHtml(src)}" style="width:100%; height:100%; object-fit:cover;">
+          <button type="button" onclick="window.__removeEditGalleryImg(${i})" style="position:absolute; top:2px; left:2px; background:rgba(231,76,60,0.9); color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:0.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>
+        </div>
+      `).join('');
+    }
+    
+    window.__removeEditGalleryImg = (idx) => {
+      editGalleryImages.splice(idx, 1);
+      renderEditGallery();
+    };
+    renderEditGallery();
+
+    modal.querySelector('#editUploadImgsBtn').onclick = () => modal.querySelector('#editImgsFiles').click();
+    modal.querySelector('#editImgsFiles').onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      for (let f of files) {
+        if (f.type.startsWith('image/')) {
+          const base64 = await fileToBase64(f);
+          editGalleryImages.push(base64);
+        }
+      }
+      renderEditGallery();
+      e.target.value = '';
+    };
+
+    modal.querySelector('#editAddImgUrlBtn').onclick = () => {
+      const input = modal.querySelector('#editImgUrlInput');
+      const url = input.value.trim();
+      if (url) {
+        editGalleryImages.push(url);
+        input.value = '';
+        renderEditGallery();
+      }
+    };
+
+    // إدارة مقاسات التعديل
+    const editCategorySelect = modal.querySelector('#editProdCategory');
+    const editSizesContainer = modal.querySelector('#editSizesContainer');
+
+    function renderEditSizes() {
+      const cat = editCategorySelect.value;
+      let sizesList = [];
+      if (cat === 'tshirts') sizesList = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+      else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
+      else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
+
+      // مزامنة البيانات القديمة (لو المقاس موجود في المنتج أو لأ)
+      let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> المقاسات والأسعار:</label>`;
+      
+      sizesList.forEach(size => {
+        const matrix = (p.sizeMatrix && p.sizeMatrix[size]) ? p.sizeMatrix[size] : { qty: 0, price: p.price || 0, colors: [] };
+        const isChecked = !!(p.sizeMatrix && p.sizeMatrix[size]);
+        
+        html += `
+          <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border-color); padding-bottom:8px; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="edit_size_chk_${size}" value="${size}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--accent);">
+                <strong style="font-size:1rem;">مقاس: ${size}</strong>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <label style="font-size:0.85rem; font-weight:700;">السعر:</label>
+                <input type="number" id="edit_size_price_${size}" value="${matrix.price}" placeholder="سعر المقاس" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:5px;">
+                <label style="font-size:0.85rem;">الكمية:</label>
+                <input type="number" id="edit_size_qty_${size}" value="${matrix.qty}" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
+              </div>
+              
+              <div style="width:100%; margin-top:8px; display:flex; gap:12px; flex-wrap:wrap;">
+                ${AVAILABLE_COLORS.map(c => {
+                  const isColorChecked = matrix.colors && matrix.colors.includes(c.name);
+                  return `
+                    <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                      <input type="checkbox" id="edit_size_${size}_color_${c.id}" value="${c.name}" ${isColorChecked ? 'checked' : ''}> 
+                      <span style="font-size:0.8rem; display:inline-block; width:12px; height:12px; border-radius:50%; background:${c.hex}; border:1px solid var(--border-color);"></span>
+                      <span style="font-size:0.8rem;">${c.name}</span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      editSizesContainer.innerHTML = html;
+    }
+    
+    editCategorySelect.addEventListener('change', renderEditSizes);
+    renderEditSizes();
+
+    modal.querySelector('#saveEditBtn').onclick = async () => {
+      const newName = modal.querySelector('#editProdName').value.trim();
+      const newCat = editCategorySelect.value;
+      const newDesc = modal.querySelector('#editProdDesc').value.trim();
+      
+      if (!newName) { showToast('أدخل اسم المنتج'); return; }
+      if (editGalleryImages.length === 0) { showToast('أضف صورة واحدة على الأقل'); return; }
+
+      const newSizeMatrix = {};
+      const allColors = new Set();
+      let newMainPrice = Infinity;
+      let anyAvail = false;
+
+      let sizesListToCheck = [];
+      if (newCat === 'tshirts') sizesListToCheck = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+      else if (newCat === 'pants') sizesListToCheck = ['28', '30', '32', '34', '36', '38', '40', '42'];
+      else if (newCat === 'shoes') sizesListToCheck = ['38', '39', '40', '41', '42', '43', '44', '45'];
+
+      sizesListToCheck.forEach(size => {
+        const chk = modal.querySelector(`#edit_size_chk_${size}`);
+        if (chk && chk.checked) {
+          const qty = parseInt(modal.querySelector(`#edit_size_qty_${size}`).value) || 0;
+          const price = parseFloat(modal.querySelector(`#edit_size_price_${size}`).value) || 0;
+          
+          if (price < newMainPrice && price > 0) newMainPrice = price;
+          if (newMainPrice === Infinity) newMainPrice = price;
+
+          const colorsForSize = [];
+          AVAILABLE_COLORS.forEach(c => {
+            const cchk = modal.querySelector(`#edit_size_${size}_color_${c.id}`);
+            if (cchk && cchk.checked) {
+              colorsForSize.push(c.name);
+              allColors.add(c.name);
+            }
+          });
+
+          newSizeMatrix[size] = { qty, price, colors: colorsForSize };
+          if (qty > 0) anyAvail = true;
+        }
+      });
+
+      if (Object.keys(newSizeMatrix).length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
+      if (newMainPrice === Infinity) newMainPrice = 0;
+
+      const colorsArray = Array.from(allColors).map(c => ({ name: c, hex: colorHexMap[c] || '#cccccc' }));
+
+      // تحديث المنتج في المصفوفة
+      const idx = products.findIndex(x => x.id === productId);
+      if (idx !== -1) {
+        products[idx] = {
+          ...products[idx],
+          name: newName,
+          category: newCat,
+          description: newDesc,
+          price: newMainPrice,
+          image: editGalleryImages[0],
+          gallery: editGalleryImages,
+          sizes: Object.keys(newSizeMatrix),
+          sizeMatrix: newSizeMatrix,
+          colors: colorsArray.length > 0 ? colorsArray : [{ name: 'أسود', hex: '#1a1a1a' }],
+          isAvailable: anyAvail
+        };
+      }
+
+      const saveBtn = modal.querySelector('#saveEditBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = 'جاري الحفظ...';
+      await saveStoreData();
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
+
+      modal.remove();
+      renderProductsAdmin();
+      renderProducts();
+      renderFeatured();
+      renderNewArrivals();
+      showToast('تم حفظ التعديلات بنجاح');
+    };
   }
   
   function populateOfferProductSelect() {
