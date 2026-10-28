@@ -20,7 +20,6 @@ export const ADMIN_EMAIL = "admin@gmail.com";
    ------------------------------------------------------------ */
 export const DEFAULT_STORE_CONFIG = {
   name: "قطان",
-  nameEn: "QATTAN",
   phone: "201225899225",
   address: "القاهرة",
   workingHours: "١٠ ص — ١٠ م"

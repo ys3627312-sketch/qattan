@@ -1,5 +1,5 @@
 // =====================================================
-// QATTAN — Store Script (Firebase Edition — URLs Only + i18n)
+// QATTAN — Store Script (Firebase Edition — URLs Only)
 // =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -36,78 +36,36 @@ let lastProductId = null;
 let isAdminLoggedIn = false;
 let currentOrdersFilter = 'all';
 
-// اللغة الحالية
-let currentLang = localStorage.getItem('qattan_lang') || 'ar';
-
 const STORAGE_KEYS = {
   cart: 'qattan_cart',
   favorites: 'qattan_favorites',
   darkMode: 'qattan_darkMode',
   lastProduct: 'qattan_lastProduct',
-  clientId: 'qattan_clientId',
-  lang: 'qattan_lang'
+  clientId: 'qattan_clientId'
 };
 
 const MAX_QTY = 10;
 
 const AVAILABLE_COLORS = [
-  { id: 'black', name: 'أسود', nameEn: 'Black', hex: '#1a1a1a' },
-  { id: 'white', name: 'أبيض', nameEn: 'White', hex: '#ffffff' },
-  { id: 'blue', name: 'أزرق', nameEn: 'Blue', hex: '#3498db' },
-  { id: 'red', name: 'أحمر', nameEn: 'Red', hex: '#e74c3c' },
-  { id: 'green', name: 'أخضر', nameEn: 'Green', hex: '#27ae60' },
-  { id: 'yellow', name: 'أصفر', nameEn: 'Yellow', hex: '#f1c40f' },
-  { id: 'navy', name: 'كحلي', nameEn: 'Navy', hex: '#34495e' },
-  { id: 'gray', name: 'رمادي', nameEn: 'Gray', hex: '#7f8c8d' },
-  { id: 'beige', name: 'بيج', nameEn: 'Beige', hex: '#d4c4a8' },
-  { id: 'brown', name: 'بني', nameEn: 'Brown', hex: '#8b5a2b' },
-  { id: 'pink', name: 'وردي', nameEn: 'Pink', hex: '#e91e63' },
-  { id: 'purple', name: 'بنفسجي', nameEn: 'Purple', hex: '#9b59b6' },
-  { id: 'orange', name: 'برتقالي', nameEn: 'Orange', hex: '#e67e22' }
+  { id: 'black', name: 'أسود', hex: '#1a1a1a' },
+  { id: 'white', name: 'أبيض', hex: '#ffffff' },
+  { id: 'blue', name: 'أزرق', hex: '#3498db' },
+  { id: 'red', name: 'أحمر', hex: '#e74c3c' },
+  { id: 'green', name: 'أخضر', hex: '#27ae60' },
+  { id: 'yellow', name: 'أصفر', hex: '#f1c40f' },
+  { id: 'navy', name: 'كحلي', hex: '#34495e' },
+  { id: 'gray', name: 'رمادي', hex: '#7f8c8d' },
+  { id: 'beige', name: 'بيج', hex: '#d4c4a8' },
+  { id: 'brown', name: 'بني', hex: '#8b5a2b' },
+  { id: 'pink', name: 'وردي', hex: '#e91e63' },
+  { id: 'purple', name: 'بنفسجي', hex: '#9b59b6' },
+  { id: 'orange', name: 'برتقالي', hex: '#e67e22' }
 ];
 
 const colorHexMap = AVAILABLE_COLORS.reduce((acc, c) => {
   acc[c.name] = c.hex;
   return acc;
 }, {});
-
-// =====================================================
-// قاموس الترجمة
-// =====================================================
-const translations = {
-  ar: {
-    home: 'المنتجات', new: 'وصل حديثاً', offers: 'العروض', favorites: 'المفضلة', orders: 'طلباتي',
-    all: 'الكل', tshirts: 'تيشيرتات', pants: 'بناطيل', shoes: 'أحذية',
-    addToCart: 'أضف إلى السلة', outOfStock: 'غير متوفر', size: 'المقاس', color: 'اللون',
-    sortDefault: 'ترتيب افتراضي', sortLow: 'الأرخص أولاً', sortHigh: 'الأغلى أولاً', sortRating: 'الأعلى تقييماً',
-    checkout: 'إتمام الطلب', total: 'الإجمالي', cartEmpty: 'سلة فارغة',
-    searchPlaceholder: 'ابحث...', sizeGuide: 'دليل المقاسات',
-    heroTitle: 'أناقة بلا مجهود', heroSub: 'ملابس مختارة بعناية لتناسب كل لحظة في يومك.',
-    shopNow: 'تسوق الآن', newArrivals: 'وصل حديثاً', viewAll: 'عرض الكل',
-    contact: 'تواصل معنا', allProducts: 'كل المنتجات', footerRights: 'جميع الحقوق محفوظة',
-    currency: 'ج.م', availableColors: 'اللون المتاح', soldOut: 'نفذ',
-    reviews: 'التقييمات', addReview: 'أضف تقييمك', yourName: 'اسمك', yourReview: 'رأيك (اختياري)',
-    submitReview: 'إرسال التقييم', relatedProducts: 'منتجات مشابهة'
-  },
-  en: {
-    home: 'Products', new: 'New Arrivals', offers: 'Offers', favorites: 'Favorites', orders: 'My Orders',
-    all: 'All', tshirts: 'T-Shirts', pants: 'Pants', shoes: 'Shoes',
-    addToCart: 'Add to Cart', outOfStock: 'Out of Stock', size: 'Size', color: 'Color',
-    sortDefault: 'Default Sort', sortLow: 'Price: Low to High', sortHigh: 'Price: High to Low', sortRating: 'Top Rated',
-    checkout: 'Checkout', total: 'Total', cartEmpty: 'Your cart is empty',
-    searchPlaceholder: 'Search...', sizeGuide: 'Size Guide',
-    heroTitle: 'Effortless Elegance', heroSub: 'Carefully curated clothing for every moment of your day.',
-    shopNow: 'Shop Now', newArrivals: 'New Arrivals', viewAll: 'View All',
-    contact: 'Contact Us', allProducts: 'All Products', footerRights: 'All rights reserved',
-    currency: 'EGP', availableColors: 'Available Colors', soldOut: 'Sold Out',
-    reviews: 'Reviews', addReview: 'Add Your Review', yourName: 'Your Name', yourReview: 'Your Review (Optional)',
-    submitReview: 'Submit Review', relatedProducts: 'Related Products'
-  }
-};
-
-function t(key) {
-  return (translations[currentLang] && translations[currentLang][key]) || key;
-}
 
 // =====================================================
 // Client ID
@@ -133,7 +91,7 @@ function escapeHtml(str) {
 }
 
 function formatPrice(n) {
-  return Number(n || 0).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US');
+  return Number(n || 0).toLocaleString('ar-EG');
 }
 
 function showToast(msg) {
@@ -155,7 +113,7 @@ function playSound() {
 
 function buildImageUrl(url, name) {
   if (!url || !url.trim()) {
-    return `https://placehold.co/400x533/f0ebe1/1a1a1a?text=${encodeURIComponent(name || 'Product')}`;
+    return `https://placehold.co/400x533/f0ebe1/1a1a1a?text=${encodeURIComponent(name || 'منتج')}`;
   }
   return url;
 }
@@ -219,11 +177,11 @@ async function saveStoreData() {
     return true;
   } catch (e) {
     console.error('❌ saveStoreData error:', e);
-    let msg = currentLang === 'ar' ? 'فشل الحفظ في Firebase' : 'Failed to save in Firebase';
+    let msg = 'فشل الحفظ في Firebase';
     if (e.code === 'permission-denied') {
-      msg = currentLang === 'ar' ? 'غير مصرح بالحفظ — سجل دخول الأدمن تاني' : 'Unauthorized — please re-login as admin';
+      msg = 'غير مصرح بالحفظ — سجل دخول الأدمن تاني';
     } else if (e.code === 'unavailable') {
-      msg = currentLang === 'ar' ? 'مشكلة في الاتصال — جرب تاني' : 'Connection issue — please try again';
+      msg = 'مشكلة في الاتصال — جرب تاني';
     }
     showToast(msg);
     return false;
@@ -308,26 +266,16 @@ async function updateOrderStatusInFirebase(firestoreId, status) {
 }
 
 // =====================================================
-// تطبيق إعدادات المتجر (نصوص ثابتة)
+// إعدادات المتجر
 // =====================================================
 function applyStoreConfig() {
-  document.title = storeConfig.name + ' | ' + (currentLang === 'ar' ? 'ملابس بجودة عالية' : 'High-Quality Clothing');
-  
-  // الاسم العربي أو الإنجليزي حسب اللغة
-  const displayName = (currentLang === 'en' && storeConfig.nameEn) ? storeConfig.nameEn : storeConfig.name;
+  document.title = storeConfig.name + ' | ملابس بجودة عالية';
   
   const el = document.getElementById('storeName');
-  if (el) el.textContent = displayName;
+  if (el) el.textContent = storeConfig.name;
   
   const drawerName = document.getElementById('drawerStoreName');
-  if (drawerName) drawerName.textContent = displayName;
-  
-  // الاسم الإنجليزي (البراند تاج)
-  const brandTag = document.querySelector('.brand-tag');
-  if (brandTag) brandTag.textContent = (storeConfig.nameEn || storeConfig.name || 'QATTAN').toUpperCase();
-  
-  const drawerBrandTag = document.querySelector('.drawer-brand-tag');
-  if (drawerBrandTag) drawerBrandTag.textContent = (storeConfig.nameEn || storeConfig.name || 'QATTAN').toUpperCase();
+  if (drawerName) drawerName.textContent = storeConfig.name;
   
   const addr = document.getElementById('storeAddress');
   if (addr) addr.textContent = storeConfig.address;
@@ -354,116 +302,8 @@ function applyStoreConfig() {
   
   const footerText = document.getElementById('footerText');
   if (footerText) {
-    footerText.textContent = `© 2025 ${displayName} | ${t('footerRights')}`;
+    footerText.textContent = `© 2025 ${storeConfig.name} | جميع الحقوق محفوظة`;
   }
-}
-
-// =====================================================
-// تطبيق اللغة
-// =====================================================
-function applyLanguage() {
-  const html = document.documentElement;
-  
-  html.lang = currentLang;
-  html.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-  document.body.classList.toggle('ltr-mode', currentLang === 'en');
-  
-  // ترجمة أزرار النافبار
-  const navMap = { home: 'home', new: 'new', offers: 'offers', favorites: 'favorites', orders: 'orders' };
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    const key = btn.dataset.page;
-    if (key && t(key)) {
-      const span = btn.querySelector('span');
-      if (span) span.textContent = t(key);
-      else btn.textContent = t(key);
-    }
-  });
-  
-  // ترجمة أزرار الـ Drawer
-  document.querySelectorAll('.drawer-nav-btn').forEach(btn => {
-    const key = btn.dataset.drawerPage;
-    if (key && t(key)) {
-      const span = btn.querySelector('span');
-      if (span) span.textContent = t(key);
-    }
-  });
-  
-  // ترجمة فلاتر الأقسام
-  document.querySelectorAll('.cat-pill').forEach(pill => {
-    const cat = pill.dataset.cat;
-    if (t(cat)) pill.textContent = t(cat);
-  });
-  
-  // ترجمة قائمة الترتيب
-  const sortSelect = document.getElementById('sortSelect');
-  if (sortSelect) {
-    sortSelect.options[0].text = t('sortDefault');
-    sortSelect.options[1].text = t('sortLow');
-    sortSelect.options[2].text = t('sortHigh');
-    sortSelect.options[3].text = t('sortRating');
-  }
-  
-  // ترجمة البحث
-  const searchInput = document.getElementById('menuSearch');
-  if (searchInput) searchInput.placeholder = t('searchPlaceholder');
-  
-  // ترجمة الهيرو
-  const heroTitle = document.querySelector('.hero-title');
-  if (heroTitle) heroTitle.textContent = t('heroTitle');
-  const heroSub = document.querySelector('.hero-subtitle');
-  if (heroSub) heroSub.textContent = t('heroSub');
-  const heroShop = document.getElementById('heroShopBtn');
-  if (heroShop) heroShop.textContent = t('shopNow');
-  const heroNew = document.getElementById('heroNewBtn');
-  if (heroNew) heroNew.textContent = t('newArrivals');
-  
-  // ترجمة عناوين الأقسام الثابتة
-  document.querySelectorAll('.section-title').forEach(el => {
-    if (el.dataset.translate === 'newArrivals' || el.textContent.includes('وصل حديثاً') || el.textContent.includes('New Arrivals')) {
-      el.textContent = t('newArrivals');
-    }
-  });
-  
-  // ترجمة زرار عرض الكل
-  document.querySelectorAll('.section-link').forEach(link => {
-    if (link.dataset.page === 'new') {
-      link.innerHTML = `${t('viewAll')} <i class="fas fa-arrow-left"></i>`;
-    }
-  });
-  
-  // ترجمة الـ breadcrumbs
-  const bcHome = document.querySelector('.breadcrumbs a[data-page="home"]');
-  if (bcHome) bcHome.textContent = currentLang === 'ar' ? 'الرئيسية' : 'Home';
-  
-  // ترجمة السلة
-  const checkoutBtn = document.getElementById('confirmOrderBtn');
-  if (checkoutBtn) {
-    checkoutBtn.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('checkout')}`;
-  }
-  const clearCartBtn = document.getElementById('clearCartBtn');
-  if (clearCartBtn) {
-    clearCartBtn.innerHTML = currentLang === 'ar' 
-      ? '<i class="fas fa-trash-alt"></i> تفريغ السلة' 
-      : '<i class="fas fa-trash-alt"></i> Clear Cart';
-  }
-  
-  const cartHeader = document.querySelector('.cart-header h3');
-  if (cartHeader) {
-    cartHeader.innerHTML = currentLang === 'ar' 
-      ? '<i class="fas fa-shopping-bag"></i> سلة المشتريات' 
-      : '<i class="fas fa-shopping-bag"></i> Shopping Cart';
-  }
-  
-  // إعادة تطبيق إعدادات المتجر (لتحديث الاسم)
-  applyStoreConfig();
-  
-  // إعادة رسم المنتجات لتحديث الأسعار والـ currency
-  renderProducts();
-  renderNewArrivals();
-  renderFeatured();
-  renderOffers();
-  renderFavorites();
-  renderCart();
 }
 
 // =====================================================
@@ -510,34 +350,34 @@ function renderProductCard(p) {
   
   let badge = '';
   if (!isAvail) {
-    badge = `<span class="product-badge unavailable">${t('outOfStock')}</span>`;
+    badge = '<span class="product-badge unavailable">غير متوفر</span>';
   } else if (hasOffer) {
     const disc = Math.round((1 - p.offerPrice / p.price) * 100);
     badge = `<span class="product-badge sale">-${disc}%</span>`;
   } else if (p.isNew) {
-    badge = `<span class="product-badge new">${currentLang === 'ar' ? 'جديد' : 'New'}</span>`;
+    badge = '<span class="product-badge new">جديد</span>';
   }
   
   return `
     <div class="product-card" data-id="${p.id}">
       <div class="product-image-wrap">
         ${badge}
-        <button class="fav-btn ${isFav ? 'active' : ''}" data-fav-id="${p.id}" aria-label="favorite">
+        <button class="fav-btn ${isFav ? 'active' : ''}" data-fav-id="${p.id}" aria-label="مفضلة">
           <i class="fas fa-heart"></i>
         </button>
         <img class="product-image" src="${escapeHtml(buildImageUrl(p.image, p.name))}" alt="${escapeHtml(p.name)}" loading="lazy">
-        <button class="quick-view-btn" data-qv-id="${p.id}">${currentLang === 'ar' ? 'عرض سريع' : 'Quick View'}</button>
+        <button class="quick-view-btn" data-qv-id="${p.id}">عرض سريع</button>
       </div>
       <div class="product-info">
-        <p class="product-category-label">${t(p.category) || ''}</p>
+        <p class="product-category-label">${categoryLabels[p.category] || ''}</p>
         <h3 class="product-name">${escapeHtml(p.name)}</h3>
         <div class="product-rating">
           <div class="stars">${renderStars(p.avgRating || 0)}</div>
           <span class="rating-count">(${p.totalRatings || 0})</span>
         </div>
         <div class="product-price ${hasOffer ? 'sale-price' : ''}">
-          ${formatPrice(finalPrice)} ${t('currency')}
-          ${hasOffer ? `<span class="old-price">${formatPrice(p.price)} ${t('currency')}</span>` : ''}
+          ${formatPrice(finalPrice)} ج.م
+          ${hasOffer ? `<span class="old-price">${formatPrice(p.price)} ج.م</span>` : ''}
         </div>
       </div>
     </div>
@@ -551,18 +391,16 @@ function renderProducts() {
   const filtered = getFilteredProducts();
   
   const titleEl = document.getElementById('currentCategoryTitle');
-  if (titleEl) titleEl.textContent = t(currentCategory) || t('home');
+  if (titleEl) titleEl.textContent = categoryLabels[currentCategory] || 'المنتجات';
   
   const countEl = document.getElementById('resultsCount');
-  if (countEl) countEl.textContent = currentLang === 'ar' 
-    ? `${filtered.length} منتج` 
-    : `${filtered.length} product${filtered.length !== 1 ? 's' : ''}`;
+  if (countEl) countEl.textContent = `${filtered.length} منتج`;
   
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-search"></i>
-        <p>${currentLang === 'ar' ? 'لا توجد منتجات في هذا القسم' : 'No products in this category'}</p>
+        <p>لا توجد منتجات في هذا القسم</p>
       </div>
     `;
     return;
@@ -579,7 +417,7 @@ function renderFeatured() {
   const featured = products.filter(p => p.isNew).slice(0, 4);
   
   if (featured.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p>${currentLang === 'ar' ? 'لا توجد منتجات مميزة' : 'No featured products'}</p></div>`;
+    container.innerHTML = '<div class="empty-state"><p>لا توجد منتجات مميزة</p></div>';
     return;
   }
   
@@ -594,7 +432,7 @@ function renderNewArrivals() {
   const newOnes = products.filter(p => p.isNew);
   
   if (newOnes.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p>${currentLang === 'ar' ? 'لا توجد منتجات جديدة' : 'No new arrivals'}</p></div>`;
+    container.innerHTML = '<div class="empty-state"><p>لا توجد منتجات جديدة</p></div>';
     return;
   }
   
@@ -607,18 +445,18 @@ function renderOffers() {
   if (!container) return;
   
   if (offers.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="fas fa-tags"></i><p>${currentLang === 'ar' ? 'لا توجد عروض حالياً' : 'No offers currently'}</p></div>`;
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p>لا توجد عروض حالياً</p></div>';
     return;
   }
   
   container.innerHTML = offers.map(o => `
     <div class="offer-card">
-      <span class="offer-tag">${escapeHtml(o.tag || (currentLang === 'ar' ? 'عرض' : 'Offer'))}</span>
+      <span class="offer-tag">${escapeHtml(o.tag || 'عرض')}</span>
       <h3 class="offer-title">${escapeHtml(o.title || '')}</h3>
       <p class="offer-desc">${escapeHtml(o.desc || '')}</p>
       ${o.isAvailable !== false && o.productId ? `
-        <button class="offer-action" data-offer-pid="${o.productId}">${currentLang === 'ar' ? 'اكتشف العرض' : 'Discover Offer'}</button>
-      ` : `<span style="opacity:0.5;">${t('outOfStock')}</span>`}
+        <button class="offer-action" data-offer-pid="${o.productId}">اكتشف العرض</button>
+      ` : '<span style="opacity:0.5;">غير متوفر</span>'}
     </div>
   `).join('');
   
@@ -637,7 +475,7 @@ function renderFavorites() {
     container.innerHTML = `
       <div class="empty-state">
         <i class="far fa-heart"></i>
-        <p>${currentLang === 'ar' ? 'لا توجد منتجات في المفضلة' : 'No favorites yet'}</p>
+        <p>لا توجد منتجات في المفضلة</p>
       </div>
     `;
     return;
@@ -677,10 +515,10 @@ function toggleFavorite(id) {
   const idx = favorites.indexOf(id);
   if (idx === -1) { 
     favorites.push(id); 
-    showToast(currentLang === 'ar' ? 'تمت الإضافة للمفضلة' : 'Added to favorites'); 
+    showToast('تمت الإضافة للمفضلة'); 
   } else { 
     favorites.splice(idx, 1); 
-    showToast(currentLang === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from favorites'); 
+    showToast('تمت الإزالة من المفضلة'); 
   }
   saveFavorites();
   renderProducts();
@@ -709,22 +547,22 @@ function openQuickView(id) {
     </div>
     <div class="quick-view-info">
       <p style="font-size:0.72rem;letter-spacing:1.5px;color:var(--text-soft);font-weight:600;">
-        ${t(p.category) || ''}
+        ${categoryLabels[p.category] || ''}
       </p>
       <h2>${escapeHtml(p.name)}</h2>
       <div class="product-details-rating">
         <div class="stars">${renderStars(p.avgRating || 0)}</div>
-        <span class="count">(${p.totalRatings || 0} ${currentLang === 'ar' ? 'تقييم' : 'reviews'})</span>
+        <span class="count">(${p.totalRatings || 0} تقييم)</span>
       </div>
       <div class="product-details-price ${hasOffer ? 'sale-price' : ''}">
-        ${formatPrice(finalPrice)} ${t('currency')}
-        ${hasOffer ? `<span class="old">${formatPrice(p.price)} ${t('currency')}</span>` : ''}
+        ${formatPrice(finalPrice)} ج.م
+        ${hasOffer ? `<span class="old">${formatPrice(p.price)} ج.م</span>` : ''}
       </div>
       <p style="font-size:0.88rem;color:var(--text-soft);line-height:1.7;">
         ${escapeHtml((p.description || '').substring(0, 100))}...
       </p>
       <button class="btn-primary" style="width:100%;margin-top:auto;" onclick="window.__quickViewGo(${p.id})">
-        ${currentLang === 'ar' ? 'عرض التفاصيل الكاملة' : 'View Full Details'}
+        عرض التفاصيل الكاملة
       </button>
     </div>
   `;
@@ -755,7 +593,7 @@ function showProductDetails(id) {
   }
   
   const bcCat = document.getElementById('breadcrumbCategory');
-  if (bcCat) bcCat.textContent = t(p.category) || '';
+  if (bcCat) bcCat.textContent = categoryLabels[p.category] || '';
   const bcProd = document.getElementById('breadcrumbProduct');
   if (bcProd) bcProd.textContent = p.name || '';
   
@@ -788,7 +626,7 @@ function renderProductDetails(id) {
         repliesHtml = r.replies.map(reply => `
           <div class="reply-item store-reply">
             <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-              <strong><span class="store-badge">${currentLang === 'ar' ? 'إدارة المتجر' : 'Store Admin'}</span> ${escapeHtml(reply.userName || 'Store')}</strong>
+              <strong><span class="store-badge">إدارة المتجر</span> ${escapeHtml(reply.userName || 'المتجر')}</strong>
             </div>
             <p style="font-size:0.9rem; margin:0;">${escapeHtml(reply.text)}</p>
           </div>
@@ -803,7 +641,7 @@ function renderProductDetails(id) {
               <span>${escapeHtml(r.userName)}</span>
             </div>
             <div class="review-stars">${renderStars(r.rating)}</div>
-            <div class="review-date">${new Date(r.date).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}</div>
+            <div class="review-date">${new Date(r.date).toLocaleDateString('ar-EG')}</div>
           </div>
           ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
           ${repliesHtml}
@@ -811,7 +649,7 @@ function renderProductDetails(id) {
       `;
     }).join('');
   } else {
-    reviewsHtml = `<div class="no-reviews">${currentLang === 'ar' ? 'لا توجد تقييمات بعد، كن أول من يقيم!' : 'No reviews yet, be the first!'}</div>`;
+    reviewsHtml = '<div class="no-reviews">لا توجد تقييمات بعد، كن أول من يقيم!</div>';
   }
   
   container.innerHTML = `
@@ -832,18 +670,18 @@ function renderProductDetails(id) {
     
     <div class="product-info-main">
       <p style="font-size:0.72rem;letter-spacing:2px;color:var(--accent);font-weight:700;">
-        ${t(p.category) || ''}
+        ${categoryLabels[p.category] || ''}
       </p>
       <h1 class="product-details-title">${escapeHtml(p.name)}</h1>
       
       <div class="product-details-rating">
         <div class="stars">${renderStars(p.avgRating || 0)}</div>
-        <span class="count">(${p.totalRatings || 0} ${currentLang === 'ar' ? 'تقييم' : 'reviews'})</span>
+        <span class="count">(${p.totalRatings || 0} تقييم)</span>
       </div>
       
       <div class="product-details-price ${hasOffer ? 'sale-price' : ''}" id="mainPriceDisplay">
-        ${formatPrice(finalPrice)} ${t('currency')}
-        ${hasOffer ? `<span class="old">${formatPrice(p.price)} ${t('currency')}</span>` : ''}
+        ${formatPrice(finalPrice)} ج.م
+        ${hasOffer ? `<span class="old">${formatPrice(p.price)} ج.م</span>` : ''}
       </div>
       
       <p class="product-description">${escapeHtml(p.description || '')}</p>
@@ -851,9 +689,9 @@ function renderProductDetails(id) {
       ${p.sizes && p.sizes.length ? `
         <div class="option-section">
           <div class="option-header">
-            <span class="option-label">${t('size')}</span>
+            <span class="option-label">المقاس</span>
             <button class="size-guide-link" onclick="document.getElementById('sizeGuideModal').classList.add('show')">
-              <i class="fas fa-ruler"></i> ${t('sizeGuide')}
+              <i class="fas fa-ruler"></i> دليل المقاسات
             </button>
           </div>
           <div class="size-selector">
@@ -865,7 +703,7 @@ function renderProductDetails(id) {
                 <button class="size-pill ${i === 0 && !isOut ? 'selected' : ''} ${isOut ? 'out-of-stock' : ''}" 
                         data-size="${escapeHtml(s)}" ${isOut ? 'disabled' : ''}>
                   ${escapeHtml(s)}
-                  ${isOut ? `<br><small style="font-size:0.65rem;">${t('soldOut')}</small>` : ''}
+                  ${isOut ? '<br><small style="font-size:0.65rem;">نفذ</small>' : ''}
                 </button>
               `;
             }).join('')}
@@ -873,7 +711,7 @@ function renderProductDetails(id) {
         </div>
         
         <div class="option-section" id="colorSection">
-          <div class="option-header"><span class="option-label">${t('availableColors')}</span></div>
+          <div class="option-header"><span class="option-label">اللون المتاح</span></div>
           <div class="color-selector" id="dynamicColors"></div>
         </div>
       ` : ''}
@@ -881,24 +719,24 @@ function renderProductDetails(id) {
       <div class="product-actions">
         <button class="btn-add-cart" id="addToCartBtn" ${!isAvail ? 'disabled' : ''}>
           <i class="fas fa-shopping-bag"></i>
-          ${isAvail ? t('addToCart') : t('outOfStock')}
+          ${isAvail ? 'أضف إلى السلة' : 'غير متوفر'}
         </button>
-        <button class="btn-wishlist ${isFav ? 'active' : ''}" id="wishlistBtn" aria-label="favorite">
+        <button class="btn-wishlist ${isFav ? 'active' : ''}" id="wishlistBtn" aria-label="مفضلة">
           <i class="fas fa-heart"></i>
         </button>
       </div>
       
       <div class="reviews-section">
-        <h3>${t('reviews')}</h3>
+        <h3>التقييمات</h3>
         <div class="reviews-list">${reviewsHtml}</div>
         <div class="add-review-form">
-          <h4>${t('addReview')}</h4>
+          <h4>أضف تقييمك</h4>
           <div class="rating-input" id="ratingInput">
             ${[1,2,3,4,5].map(s => `<i class="fas fa-star star" data-rating="${s}"></i>`).join('')}
           </div>
-          <input type="text" id="reviewName" class="review-name-input" placeholder="${t('yourName')}">
-          <textarea id="reviewComment" class="review-comment-input" placeholder="${t('yourReview')}"></textarea>
-          <button class="btn-submit-review" id="submitReviewBtn">${t('submitReview')}</button>
+          <input type="text" id="reviewName" class="review-name-input" placeholder="اسمك">
+          <textarea id="reviewComment" class="review-comment-input" placeholder="رأيك (اختياري)"></textarea>
+          <button class="btn-submit-review" id="submitReviewBtn">إرسال التقييم</button>
         </div>
       </div>
     </div>
@@ -923,24 +761,20 @@ function renderProductDetails(id) {
     const matrix = p.sizeMatrix[selectedSize];
     
     if (priceDisplay) {
-      priceDisplay.innerHTML = `${formatPrice(matrix.price)} ${t('currency')}`;
+      priceDisplay.innerHTML = `${formatPrice(matrix.price)} ج.م`;
       if (hasOffer && p.offerPrice < p.price) {
-        priceDisplay.innerHTML += ` <span class="old">${formatPrice(p.price)} ${t('currency')}</span>`;
+        priceDisplay.innerHTML += ` <span class="old">${formatPrice(p.price)} ج.م</span>`;
       }
     }
     
     if (dynamicColors) {
       if (matrix.colors && matrix.colors.length > 0) {
-        dynamicColors.innerHTML = matrix.colors.map((cName, i) => {
-          const colorObj = AVAILABLE_COLORS.find(ac => ac.name === cName);
-          const displayName = (currentLang === 'en' && colorObj) ? colorObj.nameEn : cName;
-          return `
-            <button class="color-swatch ${i === 0 ? 'selected' : ''}" 
-              data-color-name="${escapeHtml(cName)}" 
-              style="background:${colorHexMap[cName] || '#ccc'};" 
-              title="${escapeHtml(displayName)}"></button>
-          `;
-        }).join('');
+        dynamicColors.innerHTML = matrix.colors.map((cName, i) => `
+          <button class="color-swatch ${i === 0 ? 'selected' : ''}" 
+            data-color-name="${escapeHtml(cName)}" 
+            style="background:${colorHexMap[cName] || '#ccc'};" 
+            title="${escapeHtml(cName)}"></button>
+        `).join('');
         
         selColorName = matrix.colors[0];
         
@@ -952,7 +786,7 @@ function renderProductDetails(id) {
           });
         });
       } else {
-        dynamicColors.innerHTML = `<p style="font-size:0.85rem;color:var(--danger);">${currentLang === 'ar' ? 'لا توجد ألوان متاحة لهذا المقاس' : 'No colors available for this size'}</p>`;
+        dynamicColors.innerHTML = '<p style="font-size:0.85rem;color:var(--danger);">لا توجد ألوان متاحة لهذا المقاس</p>';
         selColorName = null;
       }
     }
@@ -992,7 +826,7 @@ function renderProductDetails(id) {
   
   document.getElementById('addToCartBtn')?.addEventListener('click', () => {
     if (!selSize) {
-      showToast(currentLang === 'ar' ? 'اختر مقاس أولاً' : 'Please select a size first');
+      showToast('اختر مقاس أولاً');
       return;
     }
     const matrix = p.sizeMatrix ? p.sizeMatrix[selSize] : null;
@@ -1017,8 +851,8 @@ function renderProductDetails(id) {
   document.getElementById('submitReviewBtn')?.addEventListener('click', async () => {
     const name = document.getElementById('reviewName')?.value.trim();
     const comment = document.getElementById('reviewComment')?.value.trim() || '';
-    if (!name) { showToast(currentLang === 'ar' ? 'الرجاء إدخال اسمك' : 'Please enter your name'); return; }
-    if (selectedRating === 0) { showToast(currentLang === 'ar' ? 'الرجاء اختيار تقييم' : 'Please select a rating'); return; }
+    if (!name) { showToast('الرجاء إدخال اسمك'); return; }
+    if (selectedRating === 0) { showToast('الرجاء اختيار تقييم'); return; }
     
     if (!p.ratings) p.ratings = [];
     p.ratings.push({ userName: name, rating: selectedRating, comment, date: new Date().toISOString() });
@@ -1027,7 +861,7 @@ function renderProductDetails(id) {
     
     const saved = await saveStoreData();
     if (saved) {
-      showToast(currentLang === 'ar' ? 'شكراً لتقييمك!' : 'Thanks for your review!');
+      showToast('شكراً لتقييمك!');
       playSound();
       renderProductDetails(p.id);
     }
@@ -1045,10 +879,10 @@ function openLightbox(src) {
     lightbox.id = 'imageLightbox';
     lightbox.className = 'lightbox-overlay';
     lightbox.innerHTML = `
-      <button class="lightbox-close" aria-label="close">
+      <button class="lightbox-close" aria-label="إغلاق">
         <i class="fas fa-times"></i>
       </button>
-      <img src="" alt="Product Image">
+      <img src="" alt="صورة المنتج">
     `;
     document.body.appendChild(lightbox);
     
@@ -1080,14 +914,14 @@ function openLightbox(src) {
 // =====================================================
 function addToCart(product, qty = 1, size = null, color = null, customPrice = null) {
   if (product.isAvailable === false) {
-    showToast(currentLang === 'ar' ? 'هذا المنتج غير متوفر' : 'This product is out of stock');
+    showToast('هذا المنتج غير متوفر');
     return;
   }
   
   if (size && product.sizeMatrix) {
     const matrix = product.sizeMatrix[size];
     if (matrix && matrix.qty <= 0) {
-      showToast(currentLang === 'ar' ? 'هذا المقاس غير متوفر' : 'This size is out of stock');
+      showToast('هذا المقاس غير متوفر');
       return;
     }
   }
@@ -1098,7 +932,7 @@ function addToCart(product, qty = 1, size = null, color = null, customPrice = nu
   
   if (existing) {
     if (existing.quantity + qty > MAX_QTY) {
-      showToast(currentLang === 'ar' ? `لا يمكنك طلب أكثر من ${MAX_QTY} قطع` : `You can't order more than ${MAX_QTY} pieces`);
+      showToast(`لا يمكنك طلب أكثر من ${MAX_QTY} قطع`);
       return;
     }
     existing.quantity += qty;
@@ -1119,7 +953,7 @@ function addToCart(product, qty = 1, size = null, color = null, customPrice = nu
   saveCart();
   renderCart();
   updateCartCount();
-  showToast(currentLang === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
+  showToast('تمت الإضافة إلى السلة');
   playSound();
 }
 
@@ -1135,7 +969,7 @@ function updateQty(key, delta) {
   if (!item) return;
   const newQty = item.quantity + delta;
   if (newQty <= 0) { removeFromCart(key); return; }
-  if (newQty > MAX_QTY) { showToast(currentLang === 'ar' ? `الحد الأقصى ${MAX_QTY}` : `Max ${MAX_QTY}`); return; }
+  if (newQty > MAX_QTY) { showToast(`الحد الأقصى ${MAX_QTY}`); return; }
   item.quantity = newQty;
   saveCart();
   renderCart();
@@ -1158,8 +992,8 @@ function renderCart() {
   if (!container) return;
   
   if (cart.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="fas fa-shopping-basket"></i><p>${t('cartEmpty')}</p></div>`;
-    if (totalEl) totalEl.textContent = `${t('total')}: 0 ${t('currency')}`;
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-shopping-basket"></i><p>سلة فارغة</p></div>';
+    if (totalEl) totalEl.textContent = 'الإجمالي: 0 ج.م';
     return;
   }
   
@@ -1170,9 +1004,9 @@ function renderCart() {
         <div class="cart-item-title">${escapeHtml(item.name)}</div>
         ${item.size || item.color ? `
           <div class="cart-item-variant">
-            ${item.size ? `${t('size')}: ${escapeHtml(item.size)}` : ''}
+            ${item.size ? `مقاس: ${escapeHtml(item.size)}` : ''}
             ${item.size && item.color ? ' • ' : ''}
-            ${item.color ? `${t('color')}: ${escapeHtml(item.color)}` : ''}
+            ${item.color ? `لون: ${escapeHtml(item.color)}` : ''}
           </div>
         ` : ''}
         <div class="cart-item-bottom">
@@ -1182,7 +1016,7 @@ function renderCart() {
             <button class="cart-qty-btn" data-plus="${escapeHtml(item.variantKey)}"><i class="fas fa-plus"></i></button>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <span class="cart-item-price">${formatPrice(item.price * item.quantity)} ${t('currency')}</span>
+            <span class="cart-item-price">${formatPrice(item.price * item.quantity)} ج.م</span>
             <button class="cart-remove" data-remove="${escapeHtml(item.variantKey)}"><i class="fas fa-times"></i></button>
           </div>
         </div>
@@ -1191,7 +1025,7 @@ function renderCart() {
   `).join('');
   
   const total = calcCartTotal();
-  if (totalEl) totalEl.textContent = `${t('total')}: ${formatPrice(total)} ${t('currency')}`;
+  if (totalEl) totalEl.textContent = `الإجمالي: ${formatPrice(total)} ج.م`;
   
   container.querySelectorAll('[data-plus]').forEach(b => b.addEventListener('click', () => updateQty(b.dataset.plus, 1)));
   container.querySelectorAll('[data-minus]').forEach(b => b.addEventListener('click', () => updateQty(b.dataset.minus, -1)));
@@ -1203,9 +1037,9 @@ function renderCart() {
 // =====================================================
 function validatePhone(phone) {
   if (!phone) return { valid: false };
-  if (phone.length !== 10) return { valid: false, reason: currentLang === 'ar' ? 'الرقم لازم 10 أرقام' : 'Phone must be 10 digits' };
-  const networks = { '010': 'Vodafone', '011': 'Etisalat', '012': 'Orange', '015': 'WE' };
-  if (!networks[phone.substring(0, 3)]) return { valid: false, reason: currentLang === 'ar' ? 'كود الشبكة غير صحيح' : 'Invalid network code' };
+  if (phone.length !== 10) return { valid: false, reason: 'الرقم لازم 10 أرقام' };
+  const networks = { '010': 'فودافون', '011': 'اتصالات', '012': 'أورنج', '015': 'وي' };
+  if (!networks[phone.substring(0, 3)]) return { valid: false, reason: 'كود الشبكة غير صحيح' };
   return { valid: true, network: networks[phone.substring(0, 3)], full: '+20' + phone.substring(1) };
 }
 
@@ -1218,13 +1052,13 @@ async function sendOrder() {
   const notes = document.getElementById('customerNotes')?.value.trim() || '';
   
   if (!name || !phone || !city || !address) {
-    showToast(currentLang === 'ar' ? 'الرجاء ملء جميع البيانات' : 'Please fill all fields');
+    showToast('الرجاء ملء جميع البيانات');
     return;
   }
   
   const phoneCheck = validatePhone(phone);
   if (!phoneCheck.valid) {
-    showToast(phoneCheck.reason || (currentLang === 'ar' ? 'رقم غير صحيح' : 'Invalid phone'));
+    showToast(phoneCheck.reason || 'رقم غير صحيح');
     return;
   }
   
@@ -1257,33 +1091,33 @@ async function sendOrder() {
   const firestoreId = await saveOrderToFirebase(orderData);
   
   if (!firestoreId) {
-    showToast(currentLang === 'ar' ? 'فشل إرسال الطلب — حاول مرة تانية' : 'Failed to send order — try again');
+    showToast('فشل إرسال الطلب — حاول مرة تانية');
     return;
   }
   
-  let msg = `${currentLang === 'ar' ? 'طلب جديد من' : 'New order from'} ${storeConfig.name}\n`;
+  let msg = `طلب جديد من ${storeConfig.name}\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
   cart.forEach(c => {
     msg += `• ${c.name}`;
     if (c.size) msg += ` (${c.size})`;
     if (c.color) msg += ` - ${c.color}`;
-    msg += ` ×${c.quantity} = ${c.price * c.quantity} ${t('currency')}\n`;
+    msg += ` ×${c.quantity} = ${c.price * c.quantity} ج.م\n`;
   });
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `${t('total')}: ${total} ${t('currency')}\n`;
-  msg += `${currentLang === 'ar' ? 'الاسم' : 'Name'}: ${name}\n`;
-  msg += `${currentLang === 'ar' ? 'الهاتف' : 'Phone'}: ${phoneCheck.full}\n`;
-  msg += `${currentLang === 'ar' ? 'المنطقة' : 'Area'}: ${city}\n`;
-  msg += `${currentLang === 'ar' ? 'العنوان' : 'Address'}: ${address}\n`;
-  msg += `${currentLang === 'ar' ? 'الدفع' : 'Payment'}: ${payment}\n`;
-  if (notes) msg += `${currentLang === 'ar' ? 'ملاحظات' : 'Notes'}: ${notes}\n`;
+  msg += `الإجمالي: ${total} ج.م\n`;
+  msg += `الاسم: ${name}\n`;
+  msg += `الهاتف: ${phoneCheck.full}\n`;
+  msg += `المنطقة: ${city}\n`;
+  msg += `العنوان: ${address}\n`;
+  msg += `الدفع: ${payment}\n`;
+  if (notes) msg += `ملاحظات: ${notes}\n`;
   
   cart = [];
   saveCart();
   renderCart();
   updateCartCount();
   closeModal('orderModal');
-  showToast(currentLang === 'ar' ? 'تم إرسال الطلب بنجاح' : 'Order sent successfully');
+  showToast('تم إرسال الطلب بنجاح');
   playSound();
   
   window.open(`https://wa.me/${storeConfig.phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -1293,26 +1127,24 @@ async function sendOrder() {
 // طلبات العميل
 // =====================================================
 function getStatusInfo(s) {
-  const statusMap = {
-    'new': { ar: 'جديد', en: 'New', class: 'status-new' },
-    'processing': { ar: 'قيد التنفيذ', en: 'Processing', class: 'status-processing' },
-    'completed': { ar: 'مكتمل', en: 'Completed', class: 'status-completed' },
-    'cancelled': { ar: 'ملغي', en: 'Cancelled', class: 'status-cancelled' }
-  };
-  const info = statusMap[s] || statusMap['new'];
-  return { label: currentLang === 'ar' ? info.ar : info.en, class: info.class };
+  return {
+    'new': { label: 'جديد', class: 'status-new' },
+    'processing': { label: 'قيد التنفيذ', class: 'status-processing' },
+    'completed': { label: 'مكتمل', class: 'status-completed' },
+    'cancelled': { label: 'ملغي', class: 'status-cancelled' }
+  }[s] || { label: 'جديد', class: 'status-new' };
 }
 
 async function renderCustomerOrders() {
   const container = document.getElementById('completedOrdersList');
   if (!container) return;
   
-  container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>${currentLang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p></div>`;
+  container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>';
   
   const list = await loadOrdersFromFirebase('all', true);
   
   if (list.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${currentLang === 'ar' ? 'لا توجد طلبات حتى الآن' : 'No orders yet'}</p></div>`;
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>لا توجد طلبات حتى الآن</p></div>';
     return;
   }
   
@@ -1325,7 +1157,7 @@ async function renderCustomerOrders() {
         <div class="order-card-head">
           <span class="order-id">${escapeHtml(order.orderId || ('#' + (order.firestoreId || '').slice(-4)))}</span>
           <span class="order-status-badge ${status.class}">${status.label}</span>
-          <span class="order-date">${date.toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' })}</span>
+          <span class="order-date">${date.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</span>
         </div>
         <div class="order-meta">
           <span><i class="fas fa-user"></i> ${escapeHtml(order.customerName)}</span>
@@ -1333,8 +1165,8 @@ async function renderCustomerOrders() {
         </div>
         <div class="order-items">${escapeHtml(order.summary || '')}</div>
         <div class="order-total-row">
-          <span>${t('total')}</span>
-          <span>${formatPrice(order.total)} ${t('currency')}</span>
+          <span>الإجمالي</span>
+          <span>${formatPrice(order.total)} ج.م</span>
         </div>
       </div>
     `;
@@ -1382,8 +1214,8 @@ function setupDarkMode() {
     document.body.classList.toggle('dark-mode');
     const now = document.body.classList.contains('dark-mode');
     localStorage.setItem(STORAGE_KEYS.darkMode, now);
-    const btn = document.getElementById('darkModeToggle');
-    if (btn) btn.innerHTML = now ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    const t = document.getElementById('darkModeToggle');
+    if (t) t.innerHTML = now ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
   });
 }
 
@@ -1406,7 +1238,7 @@ function setupPhoneInput() {
     if (check.valid) {
       wrap.classList.add('valid');
       hint.classList.add('valid');
-      hint.textContent = currentLang === 'ar' ? `رقم ${check.network} صحيح` : `${check.network} number is valid`;
+      hint.textContent = `رقم ${check.network} صحيح`;
     } else {
       wrap.classList.add('invalid');
       hint.classList.add('invalid');
@@ -1418,14 +1250,12 @@ function setupPhoneInput() {
 // =====================================================
 // Areas
 // =====================================================
-const areasAr = ["مدينة نصر", "المعادي", "الدقي", "المهندسين", "الزمالك", "مصر الجديدة", "شبرا", "حلوان", "المقطم", "التجمع الخامس", "الشيخ زايد", "6 أكتوبر", "العبور", "عين شمس", "المطرية"];
-const areasEn = ["Nasr City", "Maadi", "Dokki", "Mohandessin", "Zamalek", "Heliopolis", "Shubra", "Helwan", "Moqattam", "Fifth Settlement", "Sheikh Zayed", "6th of October", "Obour", "Ain Shams", "Matareya"];
+const areas = ["مدينة نصر", "المعادي", "الدقي", "المهندسين", "الزمالك", "مصر الجديدة", "شبرا", "حلوان", "المقطم", "التجمع الخامس", "الشيخ زايد", "6 أكتوبر", "العبور", "عين شمس", "المطرية"];
 
 function populateAreas() {
   const select = document.getElementById('city');
   if (!select) return;
-  select.innerHTML = `<option value="">${currentLang === 'ar' ? 'اختر المنطقة' : 'Select Area'}</option>`;
-  const areas = currentLang === 'ar' ? areasAr : areasEn;
+  select.innerHTML = '<option value="">اختر المنطقة</option>';
   areas.forEach(a => {
     const o = document.createElement('option');
     o.value = a;
@@ -1484,26 +1314,26 @@ function showAdminLoginModal() {
   modal.innerHTML = `
     <div class="modal-content" style="max-width:400px;">
       <div class="modal-header">
-        <h3><i class="fas fa-lock"></i> ${currentLang === 'ar' ? 'دخول الأدمن' : 'Admin Login'}</h3>
+        <h3><i class="fas fa-lock"></i> دخول الأدمن</h3>
         <span class="modal-close" id="closeAdminLogin">&times;</span>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>${currentLang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+          <label>البريد الإلكتروني</label>
           <input type="email" id="adminEmail" class="modal-input" value="${escapeHtml(savedEmail)}" placeholder="email@gmail.com">
         </div>
         <div class="form-group">
-          <label>${currentLang === 'ar' ? 'كلمة السر' : 'Password'}</label>
-          <input type="password" id="adminPassword" class="modal-input" placeholder="${currentLang === 'ar' ? 'كلمة السر' : 'Password'}">
+          <label>كلمة السر</label>
+          <input type="password" id="adminPassword" class="modal-input" placeholder="كلمة السر">
         </div>
         <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
           <input type="checkbox" id="rememberMe" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent);" ${savedEmail ? 'checked' : ''}>
-          <label for="rememberMe" style="margin:0;cursor:pointer;font-size:0.9rem;">${currentLang === 'ar' ? 'تذكرني' : 'Remember me'}</label>
+          <label for="rememberMe" style="margin:0;cursor:pointer;font-size:0.9rem;">تذكرني</label>
         </div>
         <div id="adminLoginError" style="color:#e74c3c;font-size:0.85rem;margin-top:8px;display:none;"></div>
       </div>
       <div class="modal-footer">
-        <button id="submitAdminLogin" class="btn-primary" style="width:100%;">${currentLang === 'ar' ? 'دخول' : 'Login'}</button>
+        <button id="submitAdminLogin" class="btn-primary" style="width:100%;">دخول</button>
       </div>
     </div>
   `;
@@ -1521,11 +1351,11 @@ function showAdminLoginModal() {
   submit.onclick = async () => {
     const em = email.value.trim();
     const pw = pass.value;
-    if (!em || !pw) { err.textContent = currentLang === 'ar' ? 'أدخل البيانات' : 'Please fill fields'; err.style.display = 'block'; return; }
+    if (!em || !pw) { err.textContent = 'أدخل البيانات'; err.style.display = 'block'; return; }
     
     err.style.display = 'none';
     submit.disabled = true;
-    submit.textContent = currentLang === 'ar' ? 'جاري الدخول...' : 'Logging in...';
+    submit.textContent = 'جاري الدخول...';
     
     try {
       const cred = await signInWithEmailAndPassword(auth, em, pw);
@@ -1537,22 +1367,22 @@ function showAdminLoginModal() {
         document.body.classList.add('admin-logged-in');
         modal.remove();
         showAdminDashboard();
-        showToast(currentLang === 'ar' ? 'تم تسجيل الدخول' : 'Logged in successfully');
+        showToast('تم تسجيل الدخول');
       } else {
-        err.textContent = currentLang === 'ar' ? 'غير مصرح' : 'Unauthorized';
+        err.textContent = 'غير مصرح';
         err.style.display = 'block';
         await signOut(auth);
       }
     } catch (e) {
-      let m = currentLang === 'ar' ? 'خطأ في الدخول' : 'Login error';
-      if (e.code === 'auth/user-not-found') m = currentLang === 'ar' ? 'الحساب غير موجود' : 'Account not found';
-      else if (e.code === 'auth/wrong-password') m = currentLang === 'ar' ? 'كلمة السر خطأ' : 'Wrong password';
-      else if (e.code === 'auth/invalid-email') m = currentLang === 'ar' ? 'إيميل غير صالح' : 'Invalid email';
+      let m = 'خطأ في الدخول';
+      if (e.code === 'auth/user-not-found') m = 'الحساب غير موجود';
+      else if (e.code === 'auth/wrong-password') m = 'كلمة السر خطأ';
+      else if (e.code === 'auth/invalid-email') m = 'إيميل غير صالح';
       err.textContent = m;
       err.style.display = 'block';
     } finally {
       submit.disabled = false;
-      submit.textContent = currentLang === 'ar' ? 'دخول' : 'Login';
+      submit.textContent = 'دخول';
     }
   };
   
@@ -1574,46 +1404,41 @@ function showAdminDashboard() {
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overflow = 'hidden';
   
-  const isAr = currentLang === 'ar';
-  
   const overlay = document.createElement('div');
   overlay.className = 'admin-panel-overlay show';
   overlay.innerHTML = `
     <div class="admin-dashboard">
       <div class="admin-top">
-        <h2><i class="fas fa-store" style="color:var(--accent);margin-left:10px;"></i> ${isAr ? 'لوحة تحكم' : 'Dashboard'} ${escapeHtml(storeConfig.name)}</h2>
-        <button id="closeAdminDash" class="admin-close-btn"><i class="fas fa-sign-out-alt"></i> ${isAr ? 'تسجيل الخروج' : 'Logout'}</button>
+        <h2><i class="fas fa-store" style="color:var(--accent);margin-left:10px;"></i> لوحة تحكم ${escapeHtml(storeConfig.name)}</h2>
+        <button id="closeAdminDash" class="admin-close-btn"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
       </div>
       
       <div class="admin-tabs">
-        <button class="admin-tab-btn active" data-tab="store"><i class="fas fa-cog"></i> ${isAr ? 'إعدادات المتجر' : 'Store Settings'}</button>
-        <button class="admin-tab-btn" data-tab="products"><i class="fas fa-tshirt"></i> ${isAr ? 'المنتجات' : 'Products'}</button>
-        <button class="admin-tab-btn" data-tab="offers"><i class="fas fa-tags"></i> ${isAr ? 'العروض' : 'Offers'}</button>
-        <button class="admin-tab-btn" data-tab="orders"><i class="fas fa-shopping-bag"></i> ${isAr ? 'الطلبات' : 'Orders'}</button>
-        <button class="admin-tab-btn" data-tab="reviews"><i class="fas fa-comments"></i> ${isAr ? 'التقييمات' : 'Reviews'}</button>
+        <button class="admin-tab-btn active" data-tab="store"><i class="fas fa-cog"></i> إعدادات المتجر</button>
+        <button class="admin-tab-btn" data-tab="products"><i class="fas fa-tshirt"></i> المنتجات</button>
+        <button class="admin-tab-btn" data-tab="offers"><i class="fas fa-tags"></i> العروض</button>
+        <button class="admin-tab-btn" data-tab="orders"><i class="fas fa-shopping-bag"></i> الطلبات</button>
+        <button class="admin-tab-btn" data-tab="reviews"><i class="fas fa-comments"></i> التقييمات</button>
       </div>
       
       <!-- تبويب المعلومات -->
       <div id="tab-store" class="admin-tab-content active-tab">
         <div class="admin-section">
-          <h3><i class="fas fa-store"></i> ${isAr ? 'بيانات المتجر' : 'Store Info'}</h3>
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'اسم المتجر (عربي)' : 'Store Name (Arabic)'}</label>
+          <h3><i class="fas fa-store"></i> بيانات المتجر</h3>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم المتجر</label>
           <input type="text" id="editName" class="admin-input" value="${escapeHtml(storeConfig.name)}">
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'اسم المتجر (إنجليزي)' : 'Store Name (English)'}</label>
-          <input type="text" id="editNameEn" class="admin-input" value="${escapeHtml(storeConfig.nameEn || 'QATTAN')}" placeholder="QATTAN">
-          
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'رقم الواتساب' : 'WhatsApp Number'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">رقم الواتساب</label>
           <input type="text" id="editPhone" class="admin-input" value="${escapeHtml(storeConfig.phone)}" placeholder="2010...">
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'العنوان' : 'Address'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">العنوان</label>
           <input type="text" id="editAddress" class="admin-input" value="${escapeHtml(storeConfig.address)}">
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'ساعات العمل' : 'Working Hours'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">ساعات العمل</label>
           <input type="text" id="editHours" class="admin-input" value="${escapeHtml(storeConfig.workingHours)}">
           
           <button id="saveStoreBtn" class="admin-btn" style="width:100%;justify-content:center;margin-top:10px;">
-            <i class="fas fa-save"></i> ${isAr ? 'حفظ الإعدادات' : 'Save Settings'}
+            <i class="fas fa-save"></i> حفظ الإعدادات
           </button>
         </div>
       </div>
@@ -1621,38 +1446,38 @@ function showAdminDashboard() {
       <!-- تبويب المنتجات -->
       <div id="tab-products" class="admin-tab-content">
         <div class="admin-section">
-          <h3><i class="fas fa-plus-circle"></i> ${isAr ? 'إضافة منتج جديد' : 'Add New Product'}</h3>
+          <h3><i class="fas fa-plus-circle"></i> إضافة منتج جديد</h3>
           <div class="admin-grid-2">
             <div>
-              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'اسم المنتج' : 'Product Name'}</label>
-              <input type="text" id="newName" class="admin-input" placeholder="${isAr ? 'مثال: تيشيرت قطن' : 'e.g. Cotton T-Shirt'}">
+              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم المنتج</label>
+              <input type="text" id="newName" class="admin-input" placeholder="مثال: تيشيرت قطن">
             </div>
             <div>
-              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'الفئة' : 'Category'}</label>
+              <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الفئة</label>
               <select id="newCategory" class="admin-input">
-                <option value="tshirts">${isAr ? 'تيشيرتات' : 'T-Shirts'}</option>
-                <option value="pants">${isAr ? 'بناطيل' : 'Pants'}</option>
-                <option value="shoes">${isAr ? 'أحذية' : 'Shoes'}</option>
+                <option value="tshirts">تيشيرتات</option>
+                <option value="pants">بناطيل</option>
+                <option value="shoes">أحذية</option>
               </select>
             </div>
           </div>
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'الوصف' : 'Description'}</label>
-          <textarea id="newDesc" class="admin-input" rows="3" placeholder="${isAr ? 'وصف المنتج...' : 'Product description...'}"></textarea>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
+          <textarea id="newDesc" class="admin-input" rows="3" placeholder="وصف المنتج..."></textarea>
 
           <div style="margin-top: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
             <input type="checkbox" id="newIsNew" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;" checked>
-            <label for="newIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">${isAr ? 'هل هذا المنتج "وصل حديثاً"؟' : 'Is this a "New Arrival"?'}</label>
+            <label for="newIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">هل هذا المنتج "وصل حديثاً"؟</label>
           </div>
           
           <div style="margin-top:20px; margin-bottom:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);">
             <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">
-              <i class="fas fa-link"></i> ${isAr ? 'روابط صور المنتج (يمكنك إضافة أكثر من صورة):' : 'Product Image URLs:'}
+              <i class="fas fa-link"></i> روابط صور المنتج (يمكنك إضافة أكثر من صورة):
             </label>
             
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-              <input type="text" id="newImgUrlInput" class="admin-input" placeholder="${isAr ? 'ضع رابط صورة هنا...' : 'Paste image URL here...'}" style="margin-bottom:0;">
-              <button type="button" id="addImgUrlBtn" class="admin-btn" style="padding:0 15px; white-space:nowrap;">${isAr ? 'إضافة' : 'Add'}</button>
+              <input type="text" id="newImgUrlInput" class="admin-input" placeholder="ضع رابط صورة هنا..." style="margin-bottom:0;">
+              <button type="button" id="addImgUrlBtn" class="admin-btn" style="padding:0 15px; white-space:nowrap;">إضافة</button>
             </div>
             
             <div id="galleryPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
@@ -1661,12 +1486,12 @@ function showAdminDashboard() {
           <div id="newSizesContainer" style="margin-top:20px; padding:15px; background:var(--bg-body); border-radius:12px; border:1px solid var(--border-color);"></div>
           
           <button id="addProductBtn" class="admin-btn" style="width:100%;justify-content:center; margin-top:20px; padding:15px;">
-            <i class="fas fa-plus"></i> ${isAr ? 'إضافة المنتج' : 'Add Product'}
+            <i class="fas fa-plus"></i> إضافة المنتج
           </button>
         </div>
         
         <div class="admin-section">
-          <h3><i class="fas fa-list"></i> ${isAr ? 'المنتجات الحالية' : 'Current Products'}</h3>
+          <h3><i class="fas fa-list"></i> المنتجات الحالية</h3>
           <div id="productsListAdmin"></div>
         </div>
       </div>
@@ -1674,26 +1499,26 @@ function showAdminDashboard() {
       <!-- تبويب العروض -->
       <div id="tab-offers" class="admin-tab-content">
         <div class="admin-section">
-          <h3><i class="fas fa-plus-circle"></i> ${isAr ? 'إضافة عرض جديد' : 'Add New Offer'}</h3>
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'عنوان العرض' : 'Offer Title'}</label>
-          <input type="text" id="newOfferTitle" class="admin-input" placeholder="${isAr ? 'خصم 20%' : '20% OFF'}">
+          <h3><i class="fas fa-plus-circle"></i> إضافة عرض جديد</h3>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">عنوان العرض</label>
+          <input type="text" id="newOfferTitle" class="admin-input" placeholder="خصم 20%">
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'الوصف' : 'Description'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
           <textarea id="newOfferDesc" class="admin-input" rows="2"></textarea>
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'نص التاج (مثال: خصم 20%)' : 'Tag text (e.g. 20% OFF)'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">نص التاج (مثال: خصم 20%)</label>
           <input type="text" id="newOfferTag" class="admin-input">
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'اختر المنتج' : 'Select Product'}</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اختر المنتج</label>
           <select id="newOfferProduct" class="admin-input"></select>
           
           <button id="addOfferBtn" class="admin-btn" style="width:100%;justify-content:center;">
-            <i class="fas fa-plus"></i> ${isAr ? 'إضافة العرض' : 'Add Offer'}
+            <i class="fas fa-plus"></i> إضافة العرض
           </button>
         </div>
         
         <div class="admin-section">
-          <h3><i class="fas fa-list"></i> ${isAr ? 'العروض الحالية' : 'Current Offers'}</h3>
+          <h3><i class="fas fa-list"></i> العروض الحالية</h3>
           <div id="offersListAdmin"></div>
         </div>
       </div>
@@ -1701,12 +1526,12 @@ function showAdminDashboard() {
       <!-- تبويب الطلبات -->
       <div id="tab-orders" class="admin-tab-content">
         <div class="admin-section">
-          <h3><i class="fas fa-shopping-bag"></i> ${isAr ? 'الطلبات الواردة' : 'Incoming Orders'}</h3>
+          <h3><i class="fas fa-shopping-bag"></i> الطلبات الواردة</h3>
           <div class="orders-filter-bar">
-            <button class="orders-filter-btn active" data-filter="all">${isAr ? 'كل الطلبات' : 'All Orders'}</button>
-            <button class="orders-filter-btn" data-filter="today">${isAr ? 'اليوم' : 'Today'}</button>
-            <button class="orders-filter-btn" data-filter="week">${isAr ? 'آخر 7 أيام' : 'Last 7 days'}</button>
-            <button class="orders-filter-btn" data-filter="month">${isAr ? 'آخر 30 يوم' : 'Last 30 days'}</button>
+            <button class="orders-filter-btn active" data-filter="all">كل الطلبات</button>
+            <button class="orders-filter-btn" data-filter="today">اليوم</button>
+            <button class="orders-filter-btn" data-filter="week">آخر 7 أيام</button>
+            <button class="orders-filter-btn" data-filter="month">آخر 30 يوم</button>
           </div>
           <div id="ordersListAdmin"></div>
         </div>
@@ -1715,7 +1540,7 @@ function showAdminDashboard() {
       <!-- تبويب التقييمات -->
       <div id="tab-reviews" class="admin-tab-content">
         <div class="admin-section">
-          <h3><i class="fas fa-comments"></i> ${isAr ? 'تقييمات العملاء' : 'Customer Reviews'}</h3>
+          <h3><i class="fas fa-comments"></i> تقييمات العملاء</h3>
           <div id="reviewsListAdmin"></div>
         </div>
       </div>
@@ -1727,7 +1552,7 @@ function showAdminDashboard() {
   overlay.querySelector('#closeAdminDash').onclick = async () => {
     try { await signOut(auth); } catch(e) {}
     closeAdminDashboard();
-    showToast(isAr ? 'تم تسجيل الخروج' : 'Logged out');
+    showToast('تم تسجيل الخروج');
   };
   
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -1747,21 +1572,20 @@ function showAdminDashboard() {
   
   overlay.querySelector('#saveStoreBtn').onclick = async () => {
     storeConfig.name = overlay.querySelector('#editName').value.trim();
-    storeConfig.nameEn = overlay.querySelector('#editNameEn').value.trim() || 'QATTAN';
     storeConfig.phone = overlay.querySelector('#editPhone').value.trim();
     storeConfig.address = overlay.querySelector('#editAddress').value.trim();
     storeConfig.workingHours = overlay.querySelector('#editHours').value.trim();
     
     const btn = overlay.querySelector('#saveStoreBtn');
     btn.disabled = true;
-    btn.innerHTML = isAr ? 'جاري الحفظ...' : 'Saving...';
+    btn.innerHTML = 'جاري الحفظ...';
     const saved = await saveStoreData();
     btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-save"></i> ${isAr ? 'حفظ الإعدادات' : 'Save Settings'}`;
+    btn.innerHTML = '<i class="fas fa-save"></i> حفظ الإعدادات';
     
     if (saved) {
-      applyLanguage();
-      showToast(isAr ? '✅ تم حفظ الإعدادات' : '✅ Settings saved');
+      applyStoreConfig();
+      showToast('✅ تم حفظ الإعدادات');
     }
   };
   
@@ -1797,7 +1621,7 @@ function showAdminDashboard() {
   };
 
   // =====================================================
-  // إدارة المقاسات والأسعار والألوان
+  // إدارة المقاسات والأسعار والألوان (إضافة)
   // =====================================================
   const categorySelect = overlay.querySelector('#newCategory');
   const sizesContainer = overlay.querySelector('#newSizesContainer');
@@ -1809,25 +1633,25 @@ function showAdminDashboard() {
     else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
     else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
-    let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> ${isAr ? 'إدارة المقاسات والألوان والأسعار:' : 'Sizes, Colors & Prices:'}</label>`;
+    let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> إدارة المقاسات والألوان والأسعار:</label>`;
     
     sizesList.forEach(size => {
       html += `
         <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border-color); padding-bottom:8px; margin-bottom:8px;">
-            <strong style="font-size:1rem;">${isAr ? 'مقاس:' : 'Size:'} ${size}</strong>
+            <strong style="font-size:1rem;">مقاس: ${size}</strong>
             <div style="display:flex; gap:10px; align-items:center;">
-               <label style="font-size:0.85rem; font-weight:700;">${isAr ? 'السعر:' : 'Price:'}</label>
-               <input type="number" id="size_price_${size}" value="0" placeholder="${isAr ? 'سعر المقاس' : 'Size price'}" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
+               <label style="font-size:0.85rem; font-weight:700;">السعر:</label>
+               <input type="number" id="size_price_${size}" value="0" placeholder="سعر المقاس" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
             </div>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="checkbox" id="size_chk_${size}" value="${size}" checked style="width:16px;height:16px;accent-color:var(--accent);">
-              <span style="font-size:0.85rem;">${isAr ? 'متوفر' : 'Available'}</span>
+              <span style="font-size:0.85rem;">متوفر</span>
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
-              <label style="font-size:0.85rem;">${isAr ? 'الكمية:' : 'Qty:'}</label>
+              <label style="font-size:0.85rem;">الكمية:</label>
               <input type="number" id="size_qty_${size}" value="10" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
             </div>
             
@@ -1836,7 +1660,7 @@ function showAdminDashboard() {
                 <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
                   <input type="checkbox" id="size_${size}_color_${c.id}" value="${c.name}" ${c.id === 'black' ? 'checked' : ''}> 
                   <span style="font-size:0.8rem; display:inline-block; width:12px; height:12px; border-radius:50%; background:${c.hex}; border:1px solid var(--border-color);"></span>
-                  <span style="font-size:0.8rem;">${isAr ? c.name : c.nameEn}</span>
+                  <span style="font-size:0.8rem;">${c.name}</span>
                 </label>
               `).join('')}
             </div>
@@ -1856,8 +1680,8 @@ function showAdminDashboard() {
     const desc = overlay.querySelector('#newDesc').value.trim();
     const isNewProduct = overlay.querySelector('#newIsNew').checked;
     
-    if (!name) { showToast(isAr ? 'أدخل اسم المنتج' : 'Enter product name'); return; }
-    if (galleryImages.length === 0) { showToast(isAr ? 'أضف رابط صورة واحد على الأقل' : 'Add at least one image URL'); return; }
+    if (!name) { showToast('أدخل اسم المنتج'); return; }
+    if (galleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
     
     const sizeMatrix = {}; 
     const allAvailableColors = new Set();
@@ -1892,7 +1716,7 @@ function showAdminDashboard() {
       }
     });
 
-    if (Object.keys(sizeMatrix).length === 0) { showToast(isAr ? 'اختر مقاس واحد على الأقل' : 'Select at least one size'); return; }
+    if (Object.keys(sizeMatrix).length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
     if (mainPrice === Infinity) mainPrice = 0;
 
     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
@@ -1921,13 +1745,13 @@ function showAdminDashboard() {
     
     const btn = overlay.querySelector('#addProductBtn');
     btn.disabled = true;
-    btn.innerHTML = isAr ? 'جاري الحفظ...' : 'Saving...';
+    btn.innerHTML = 'جاري الحفظ...';
     const saved = await saveStoreData();
     btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-plus"></i> ${isAr ? 'إضافة المنتج' : 'Add Product'}`;
+    btn.innerHTML = '<i class="fas fa-plus"></i> إضافة المنتج';
     
     if (!saved) {
-      showToast(isAr ? '❌ فشل حفظ المنتج' : '❌ Failed to save product');
+      showToast('❌ فشل حفظ المنتج');
       return;
     }
     
@@ -1940,40 +1764,40 @@ function showAdminDashboard() {
     renderProducts();
     renderFeatured();
     renderNewArrivals();
-    showToast(isAr ? '✅ تم إضافة المنتج بنجاح' : '✅ Product added successfully');
+    showToast('✅ تم إضافة المنتج بنجاح');
   };
   
   overlay.querySelector('#addOfferBtn').onclick = async () => {
     const title = overlay.querySelector('#newOfferTitle').value.trim();
     const pid = parseInt(overlay.querySelector('#newOfferProduct').value);
     
-    if (!title || !pid) { showToast(isAr ? 'أدخل البيانات' : 'Fill data'); return; }
+    if (!title || !pid) { showToast('أدخل البيانات'); return; }
     
     offers.push({ id: 'off_' + Date.now(), title, productId: pid, isAvailable: true });
     
     const btn = overlay.querySelector('#addOfferBtn');
     btn.disabled = true;
-    btn.innerHTML = isAr ? 'جاري الحفظ...' : 'Saving...';
+    btn.innerHTML = 'جاري الحفظ...';
     const saved = await saveStoreData();
     btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-plus"></i> ${isAr ? 'إضافة العرض' : 'Add Offer'}`;
+    btn.innerHTML = '<i class="fas fa-plus"></i> إضافة العرض';
     
     if (saved) {
       renderOffersAdmin();
       renderOffers();
-      showToast(isAr ? '✅ تم إضافة العرض' : '✅ Offer added');
+      showToast('✅ تم إضافة العرض');
     }
   };
   
   // =====================================================
-  // عرض المنتجات في الأدمن
+  // عرض المنتجات في الأدمن (مع زرار التعديل)
   // =====================================================
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
     if (!cont) return;
 
     if (products.length === 0) { 
-      cont.innerHTML = `<p style="text-align:center;padding:20px;">${isAr ? 'لا توجد منتجات' : 'No products'}</p>`; 
+      cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>'; 
       return; 
     }
     
@@ -1982,11 +1806,11 @@ function showAdminDashboard() {
         <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" class="admin-product-img">
         <div class="admin-product-info">
           <strong>${escapeHtml(p.name)}</strong>
-          <span>${formatPrice(p.price)} ${t('currency')} — ${t(p.category)}</span>
+          <span>${formatPrice(p.price)} ج.م — ${categoryLabels[p.category]}</span>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-          <button class="admin-edit-btn" data-edit="${p.id}" style="background:var(--accent-soft); color:var(--text-color); border:1px solid var(--border-color); padding:8px 16px; border-radius:50px; font-weight:700; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><i class="fas fa-edit"></i> ${isAr ? 'تعديل' : 'Edit'}</button>
-          <button class="admin-del-btn" data-del="${p.id}"><i class="fas fa-trash"></i> ${isAr ? 'حذف' : 'Delete'}</button>
+          <button class="admin-edit-btn" data-edit="${p.id}" style="background:var(--accent-soft); color:var(--text-color); border:1px solid var(--border-color); padding:8px 16px; border-radius:50px; font-weight:700; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><i class="fas fa-edit"></i> تعديل</button>
+          <button class="admin-del-btn" data-del="${p.id}"><i class="fas fa-trash"></i> حذف</button>
         </div>
       </div>
     `).join('');
@@ -1996,7 +1820,7 @@ function showAdminDashboard() {
         e.preventDefault();
         e.stopPropagation();
         const id = parseInt(btn.dataset.del);
-        showConfirm(isAr ? 'حذف المنتج نهائياً؟' : 'Delete product permanently?', async () => {
+        showConfirm('حذف المنتج نهائياً؟', async () => {
           products = products.filter(p => p.id !== id);
           const saved = await saveStoreData();
           if (saved) {
@@ -2004,7 +1828,7 @@ function showAdminDashboard() {
             renderProducts();
             renderFeatured();
             renderNewArrivals();
-            showToast(isAr ? '✅ تم الحذف' : '✅ Deleted');
+            showToast('✅ تم الحذف');
           }
         });
       };
@@ -2033,39 +1857,39 @@ function showAdminDashboard() {
     modal.innerHTML = `
       <div class="modal-content" style="max-width:700px; max-height:90vh; overflow-y:auto;">
         <div class="modal-header" style="position:sticky; top:0; background:var(--card-bg); z-index:2;">
-          <h3><i class="fas fa-edit"></i> ${isAr ? 'تعديل المنتج:' : 'Edit Product:'} ${escapeHtml(p.name)}</h3>
+          <h3><i class="fas fa-edit"></i> تعديل المنتج: ${escapeHtml(p.name)}</h3>
           <span class="modal-close" id="closeEditModal">&times;</span>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'اسم المنتج' : 'Product Name'}</label>
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم المنتج</label>
             <input type="text" id="editProdName" class="admin-input" value="${escapeHtml(p.name)}">
           </div>
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'الفئة' : 'Category'}</label>
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الفئة</label>
             <select id="editProdCategory" class="admin-input">
-              <option value="tshirts" ${p.category === 'tshirts' ? 'selected' : ''}>${isAr ? 'تيشيرتات' : 'T-Shirts'}</option>
-              <option value="pants" ${p.category === 'pants' ? 'selected' : ''}>${isAr ? 'بناطيل' : 'Pants'}</option>
-              <option value="shoes" ${p.category === 'shoes' ? 'selected' : ''}>${isAr ? 'أحذية' : 'Shoes'}</option>
+              <option value="tshirts" ${p.category === 'tshirts' ? 'selected' : ''}>تيشيرتات</option>
+              <option value="pants" ${p.category === 'pants' ? 'selected' : ''}>بناطيل</option>
+              <option value="shoes" ${p.category === 'shoes' ? 'selected' : ''}>أحذية</option>
             </select>
           </div>
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">${isAr ? 'الوصف' : 'Description'}</label>
+            <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
             <textarea id="editProdDesc" class="admin-input" rows="3">${escapeHtml(p.description || '')}</textarea>
           </div>
 
           <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
             <input type="checkbox" id="editIsNew" ${p.isNew ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
-            <label for="editIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">${isAr ? 'هل هذا المنتج "وصل حديثاً"؟' : 'Is this a "New Arrival"?'}</label>
+            <label for="editIsNew" style="font-weight: 700; font-size: 0.95rem; cursor: pointer;">هل هذا المنتج "وصل حديثاً"؟</label>
           </div>
 
           <hr style="margin:15px 0; border:none; border-top:1px dashed var(--border-color);">
 
           <div style="margin-top:15px; margin-bottom:15px;">
-            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">${isAr ? 'روابط صور المنتج:' : 'Product Image URLs:'}</label>
+            <label style="font-weight:700;font-size:0.9rem; margin-bottom:10px; display:block;">روابط صور المنتج:</label>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-              <input type="text" id="editImgUrlInput" class="admin-input" placeholder="${isAr ? 'ضع رابط صورة...' : 'Paste image URL...'}" style="margin-bottom:0;">
-              <button type="button" id="editAddImgUrlBtn" class="admin-btn" style="padding:0 15px;">${isAr ? 'إضافة' : 'Add'}</button>
+              <input type="text" id="editImgUrlInput" class="admin-input" placeholder="أو ضع رابط صورة..." style="margin-bottom:0;">
+              <button type="button" id="editAddImgUrlBtn" class="admin-btn" style="padding:0 15px;">إضافة</button>
             </div>
             <div id="editGalleryPreview" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
           </div>
@@ -2076,7 +1900,7 @@ function showAdminDashboard() {
         </div>
         <div class="modal-footer" style="position:sticky; bottom:0; background:var(--card-bg); z-index:2;">
           <button id="saveEditBtn" class="admin-btn" style="width:100%; justify-content:center; padding:14px;">
-            <i class="fas fa-save"></i> ${isAr ? 'حفظ التعديلات' : 'Save Changes'}
+            <i class="fas fa-save"></i> حفظ التعديلات
           </button>
         </div>
       </div>
@@ -2128,7 +1952,7 @@ function showAdminDashboard() {
       else if (cat === 'pants') sizesList = ['28', '30', '32', '34', '36', '38', '40', '42'];
       else if (cat === 'shoes') sizesList = ['38', '39', '40', '41', '42', '43', '44', '45'];
 
-      let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> ${isAr ? 'المقاسات والأسعار:' : 'Sizes & Prices:'}</label>`;
+      let html = `<label style="font-weight:700;font-size:1rem;margin-bottom:10px;display:block;color:var(--accent);"><i class="fas fa-tags"></i> المقاسات والأسعار:</label>`;
       
       sizesList.forEach(size => {
         const matrix = (p.sizeMatrix && p.sizeMatrix[size]) ? p.sizeMatrix[size] : { qty: 0, price: p.price || 0, colors: [] };
@@ -2139,16 +1963,16 @@ function showAdminDashboard() {
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border-color); padding-bottom:8px; margin-bottom:8px;">
               <div style="display:flex; align-items:center; gap:8px;">
                 <input type="checkbox" id="edit_size_chk_${size}" value="${size}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--accent);">
-                <strong style="font-size:1rem;">${isAr ? 'مقاس:' : 'Size:'} ${size}</strong>
+                <strong style="font-size:1rem;">مقاس: ${size}</strong>
               </div>
               <div style="display:flex; gap:10px; align-items:center;">
-                <label style="font-size:0.85rem; font-weight:700;">${isAr ? 'السعر:' : 'Price:'}</label>
-                <input type="number" id="edit_size_price_${size}" value="${matrix.price}" placeholder="${isAr ? 'سعر المقاس' : 'Size price'}" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
+                <label style="font-size:0.85rem; font-weight:700;">السعر:</label>
+                <input type="number" id="edit_size_price_${size}" value="${matrix.price}" placeholder="سعر المقاس" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem;">
               </div>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:10px;">
               <div style="display:flex; align-items:center; gap:5px;">
-                <label style="font-size:0.85rem;">${isAr ? 'الكمية:' : 'Qty:'}</label>
+                <label style="font-size:0.85rem;">الكمية:</label>
                 <input type="number" id="edit_size_qty_${size}" value="${matrix.qty}" min="0" style="width:50px; padding:4px; border-radius:4px; border:1px solid var(--border-color);">
               </div>
               
@@ -2159,7 +1983,7 @@ function showAdminDashboard() {
                     <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
                       <input type="checkbox" id="edit_size_${size}_color_${c.id}" value="${c.name}" ${isColorChecked ? 'checked' : ''}> 
                       <span style="font-size:0.8rem; display:inline-block; width:12px; height:12px; border-radius:50%; background:${c.hex}; border:1px solid var(--border-color);"></span>
-                      <span style="font-size:0.8rem;">${isAr ? c.name : c.nameEn}</span>
+                      <span style="font-size:0.8rem;">${c.name}</span>
                     </label>
                   `;
                 }).join('')}
@@ -2180,8 +2004,8 @@ function showAdminDashboard() {
       const newDesc = modal.querySelector('#editProdDesc').value.trim();
       const newIsNew = modal.querySelector('#editIsNew').checked;
       
-      if (!newName) { showToast(isAr ? 'أدخل اسم المنتج' : 'Enter product name'); return; }
-      if (editGalleryImages.length === 0) { showToast(isAr ? 'أضف رابط صورة واحد على الأقل' : 'Add at least one image URL'); return; }
+      if (!newName) { showToast('أدخل اسم المنتج'); return; }
+      if (editGalleryImages.length === 0) { showToast('أضف رابط صورة واحد على الأقل'); return; }
 
       const newSizeMatrix = {};
       const allColors = new Set();
@@ -2216,7 +2040,7 @@ function showAdminDashboard() {
         }
       });
 
-      if (Object.keys(newSizeMatrix).length === 0) { showToast(isAr ? 'اختر مقاس واحد على الأقل' : 'Select at least one size'); return; }
+      if (Object.keys(newSizeMatrix).length === 0) { showToast('اختر مقاس واحد على الأقل'); return; }
       if (newMainPrice === Infinity) newMainPrice = 0;
 
       const colorsArray = Array.from(allColors).map(c => ({ name: c, hex: colorHexMap[c] || '#cccccc' }));
@@ -2241,10 +2065,10 @@ function showAdminDashboard() {
 
       const saveBtn = modal.querySelector('#saveEditBtn');
       saveBtn.disabled = true;
-      saveBtn.innerHTML = isAr ? 'جاري الحفظ...' : 'Saving...';
+      saveBtn.innerHTML = 'جاري الحفظ...';
       const saved = await saveStoreData();
       saveBtn.disabled = false;
-      saveBtn.innerHTML = `<i class="fas fa-save"></i> ${isAr ? 'حفظ التعديلات' : 'Save Changes'}`;
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ التعديلات';
 
       if (saved) {
         modal.remove();
@@ -2252,9 +2076,9 @@ function showAdminDashboard() {
         renderProducts();
         renderFeatured();
         renderNewArrivals();
-        showToast(isAr ? '✅ تم حفظ التعديلات بنجاح' : '✅ Changes saved');
+        showToast('✅ تم حفظ التعديلات بنجاح');
       } else {
-        showToast(isAr ? '❌ فشل الحفظ' : '❌ Failed to save');
+        showToast('❌ فشل الحفظ — تحقق من الصلاحيات');
       }
     };
   }
@@ -2266,7 +2090,7 @@ function showAdminDashboard() {
   
   function renderOffersAdmin() {
     const cont = overlay.querySelector('#offersListAdmin');
-    if (offers.length === 0) { cont.innerHTML = `<p style="text-align:center;padding:20px;">${isAr ? 'لا توجد عروض' : 'No offers'}</p>`; return; }
+    if (offers.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد عروض</p>'; return; }
     
     cont.innerHTML = offers.map(o => `
       <div class="admin-product-row">
@@ -2274,20 +2098,20 @@ function showAdminDashboard() {
           <strong>${escapeHtml(o.title)}</strong>
           <span>${escapeHtml(o.tag || '')}</span>
         </div>
-        <button class="admin-del-btn" data-del="${o.id}"><i class="fas fa-trash"></i> ${isAr ? 'حذف' : 'Delete'}</button>
+        <button class="admin-del-btn" data-del="${o.id}"><i class="fas fa-trash"></i> حذف</button>
       </div>
     `).join('');
     
     cont.querySelectorAll('[data-del]').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.del;
-        showConfirm(isAr ? 'حذف العرض؟' : 'Delete offer?', async () => {
+        showConfirm('حذف العرض؟', async () => {
           offers = offers.filter(o => o.id !== id);
           const saved = await saveStoreData();
           if (saved) {
             renderOffersAdmin();
             renderOffers();
-            showToast(isAr ? '✅ تم الحذف' : '✅ Deleted');
+            showToast('✅ تم الحذف');
           }
         });
       };
@@ -2296,11 +2120,11 @@ function showAdminDashboard() {
   
   async function renderOrdersAdmin() {
     const cont = overlay.querySelector('#ordersListAdmin');
-    cont.innerHTML = `<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحميل...' : 'Loading...'}</p>`;
+    cont.innerHTML = '<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>';
     
     const list = await loadOrdersFromFirebase(currentOrdersFilter, false);
     
-    if (list.length === 0) { cont.innerHTML = `<p style="text-align:center;padding:20px;">${isAr ? 'لا توجد طلبات' : 'No orders'}</p>`; return; }
+    if (list.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات</p>'; return; }
     
     cont.innerHTML = list.map(o => {
       const status = getStatusInfo(o.status);
@@ -2315,12 +2139,12 @@ function showAdminDashboard() {
             <i class="fas fa-phone"></i> ${escapeHtml(o.customerPhoneLocal || '')} | <i class="fas fa-map-marker-alt"></i> ${escapeHtml(o.fullAddress || '')}
           </div>
           <div style="background:var(--bg-soft);padding:10px;border-radius:8px;margin-bottom:10px;">${escapeHtml(o.summary || '')}</div>
-          <div style="font-weight:800;font-size:1.1rem;margin-bottom:15px;">${formatPrice(o.total)} ${t('currency')}</div>
+          <div style="font-weight:800;font-size:1.1rem;margin-bottom:15px;">${formatPrice(o.total)} ج.م</div>
           
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${o.status !== 'processing' ? `<button data-status="processing" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#3498db;padding:8px 15px;font-size:0.8rem;">${isAr ? 'قيد التنفيذ' : 'Processing'}</button>` : ''}
-            ${o.status !== 'completed' ? `<button data-status="completed" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#27ae60;padding:8px 15px;font-size:0.8rem;">${isAr ? 'مكتمل' : 'Completed'}</button>` : ''}
-            ${o.status !== 'cancelled' ? `<button data-status="cancelled" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#e74c3c;padding:8px 15px;font-size:0.8rem;">${isAr ? 'إلغاء' : 'Cancel'}</button>` : ''}
+            ${o.status !== 'processing' ? `<button data-status="processing" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#3498db;padding:8px 15px;font-size:0.8rem;">قيد التنفيذ</button>` : ''}
+            ${o.status !== 'completed' ? `<button data-status="completed" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#27ae60;padding:8px 15px;font-size:0.8rem;">مكتمل</button>` : ''}
+            ${o.status !== 'cancelled' ? `<button data-status="cancelled" data-oid="${o.firestoreId}" class="status-btn admin-btn" style="background:#e74c3c;padding:8px 15px;font-size:0.8rem;">إلغاء</button>` : ''}
           </div>
         </div>
       `;
@@ -2332,7 +2156,7 @@ function showAdminDashboard() {
         const st = btn.dataset.status;
         await updateOrderStatusInFirebase(oid, st);
         renderOrdersAdmin();
-        showToast(isAr ? 'تم تحديث الحالة' : 'Status updated');
+        showToast('تم تحديث الحالة');
       };
     });
   }
@@ -2360,7 +2184,7 @@ function showAdminDashboard() {
     });
     
     if (allReviews.length === 0) {
-      cont.innerHTML = `<p style="text-align:center; padding:20px;">${isAr ? 'لا توجد تقييمات حتى الآن' : 'No reviews yet'}</p>`;
+      cont.innerHTML = '<p style="text-align:center; padding:20px;">لا توجد تقييمات حتى الآن</p>';
       return;
     }
     
@@ -2369,7 +2193,7 @@ function showAdminDashboard() {
     cont.innerHTML = allReviews.map(item => {
       const repliesHtml = (item.review.replies && item.review.replies.length > 0) ? item.review.replies.map(reply => `
         <div class="reply-item store-reply" style="margin-bottom:8px;">
-          <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">${isAr ? 'المتجر (إدارة):' : 'Store (Admin):'}</strong>
+          <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">المتجر (إدارة):</strong>
           <span style="font-size:0.9rem;">${escapeHtml(reply.text)}</span>
         </div>
       `).join('') : '';
@@ -2378,7 +2202,7 @@ function showAdminDashboard() {
         <div class="admin-review-card">
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <strong style="color:var(--accent);">${escapeHtml(item.productName)}</strong>
-            <span style="font-size:0.75rem; opacity:0.6;">${new Date(item.review.date).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}</span>
+            <span style="font-size:0.75rem; opacity:0.6;">${new Date(item.review.date).toLocaleDateString('ar-EG')}</span>
           </div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
             <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(item.review.userName)}</span>
@@ -2389,8 +2213,8 @@ function showAdminDashboard() {
           ${repliesHtml}
           
           <div class="admin-reply-box">
-            <input type="text" placeholder="${isAr ? 'اكتب ردك هنا...' : 'Write your reply...'}" class="admin-reply-input" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">
-            <button class="admin-reply-btn" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">${isAr ? 'رد' : 'Reply'}</button>
+            <input type="text" placeholder="اكتب ردك هنا..." class="admin-reply-input" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">
+            <button class="admin-reply-btn" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">رد</button>
           </div>
         </div>
       `;
@@ -2403,22 +2227,22 @@ function showAdminDashboard() {
         const input = cont.querySelector(`.admin-reply-input[data-pid="${pid}"][data-ridx="${ridx}"]`);
         const text = input?.value.trim();
         
-        if (!text) { showToast(isAr ? 'أدخل نص الرد' : 'Enter reply text'); return; }
+        if (!text) { showToast('أدخل نص الرد'); return; }
         
         const product = products.find(p => p.id === pid);
         if (product && product.ratings && product.ratings[ridx]) {
           if (!product.ratings[ridx].replies) product.ratings[ridx].replies = [];
-          product.ratings[ridx].replies.push({ text, userName: isAr ? "المتجر" : "Store", date: new Date().toISOString() });
+          product.ratings[ridx].replies.push({ text, userName: "المتجر", date: new Date().toISOString() });
           
           btn.disabled = true;
           btn.textContent = '...';
           const saved = await saveStoreData();
           if (saved) {
             renderReviewsAdmin();
-            showToast(isAr ? '✅ تم إضافة الرد' : '✅ Reply added');
+            showToast('✅ تم إضافة الرد');
           } else {
             btn.disabled = false;
-            btn.textContent = isAr ? 'رد' : 'Reply';
+            btn.textContent = 'رد';
           }
         }
       };
@@ -2444,9 +2268,7 @@ async function init() {
   
   await loadStoreData();
   
-  // تطبيق اللغة الحالية قبل أي حاجة
-  applyLanguage();
-  
+  applyStoreConfig();
   renderFeatured();
   renderProducts();
   renderCart();
@@ -2586,17 +2408,17 @@ async function init() {
   
   document.getElementById('clearCartBtn')?.addEventListener('click', () => {
     if (cart.length === 0) return;
-    showConfirm(currentLang === 'ar' ? 'تفريغ السلة؟' : 'Clear cart?', () => {
+    showConfirm('تفريغ السلة؟', () => {
       cart = [];
       saveCart();
       renderCart();
       updateCartCount();
-      showToast(currentLang === 'ar' ? 'تم التفريغ' : 'Cart cleared');
+      showToast('تم التفريغ');
     });
   });
   
   document.getElementById('confirmOrderBtn')?.addEventListener('click', () => {
-    if (cart.length === 0) { showToast(t('cartEmpty')); return; }
+    if (cart.length === 0) { showToast('السلة فارغة'); return; }
     closeCart();
     setTimeout(() => document.getElementById('orderModal').classList.add('show'), 250);
   });
@@ -2616,16 +2438,7 @@ async function init() {
   
   document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => {
     renderCustomerOrders();
-    showToast(currentLang === 'ar' ? 'تم التحديث' : 'Updated');
-  });
-  
-  // زرار تغيير اللغة
-  document.getElementById('langToggle')?.addEventListener('click', () => {
-    currentLang = currentLang === 'ar' ? 'en' : 'ar';
-    localStorage.setItem(STORAGE_KEYS.lang, currentLang);
-    applyLanguage();
-    populateAreas();
-    showToast(currentLang === 'ar' ? 'اللغة: العربية' : 'Language: English');
+    showToast('تم التحديث');
   });
   
   setupAdminLogin();
