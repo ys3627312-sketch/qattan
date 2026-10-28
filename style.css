@@ -2498,3 +2498,25 @@ body.admin-open .whatsapp-fab {
     height: 40px;
   }
 }
+/* ============================================
+   Language Toggle (LTR Support)
+   ============================================ */
+body.ltr-mode {
+  direction: ltr;
+}
+body.ltr-mode .navbar-inner { flex-direction: row; }
+body.ltr-mode .nav-links { justify-content: center; }
+body.ltr-mode .logo { align-items: flex-start; }
+body.ltr-mode .hero-content { text-align: left; }
+body.ltr-mode .section-header { flex-direction: row; }
+body.ltr-mode .breadcrumbs { flex-direction: row; }
+body.ltr-mode .footer-info { text-align: left; }
+body.ltr-mode .cart-sidebar { left: auto; right: -100%; }
+body.ltr-mode .cart-sidebar.open { right: 0; }
+body.ltr-mode .mobile-drawer-panel { left: auto; right: 0; transform: translateX(105%); }
+body.ltr-mode .mobile-drawer.open .mobile-drawer-panel { transform: translateX(0); }
+body.ltr-mode .phone-prefix { border-left: none; border-right: 1.5px solid var(--border-color); }
+body.ltr-mode .phone-input { text-align: right; }
+body.ltr-mode .drawer-nav-btn { text-align: left; }
+body.ltr-mode .drawer-nav-btn.active { border-right: none; border-left: 3px solid var(--accent); padding-right: 22px; padding-left: 19px; }
+body.ltr-mode .drawer-header { flex-direction: row; }
