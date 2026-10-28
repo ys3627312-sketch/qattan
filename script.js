@@ -411,7 +411,8 @@ function renderFeatured() {
   const container = document.getElementById('newArrivalsContainer');
   if (!container) return;
   
-  const featured = products.filter(p => p.isFeatured).slice(0, 4);
+  // التعديل هنا: بقينا بنفلتر بـ isNew بدل isFeatured
+  const featured = products.filter(p => p.isNew).slice(0, 4);
   
   if (featured.length === 0) {
     container.innerHTML = '<div class="empty-state"><p>لا توجد منتجات مميزة</p></div>';
