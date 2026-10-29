@@ -2,6 +2,14 @@
 // QATTAN — Store Script (Firebase Edition — URLs Only)
 // =====================================================
 
+let threeScene, threeCamera, threeRenderer, threeControls;
+let mannequinModel = null;
+let selectedTshirt = null;
+let selectedPants = null;
+
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc,
@@ -11,13 +19,6 @@ import {
 import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 import { firebaseConfig, ADMIN_EMAIL, DEFAULT_STORE_CONFIG } from "./firebase-config.js";
-
-// =====================================================
-// Three.js Imports (للمانيكان 3D)
-// =====================================================
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // =====================================================
 // Firebase Init
@@ -31,7 +32,7 @@ const auth = getAuth(app);
 // =====================================================
 let storeConfig = { ...DEFAULT_STORE_CONFIG };
 let products = [];
-let offers = [];
+let offers = []; 
 let bundles = [];
 let cart = [];
 let favorites = [];
@@ -43,12 +44,6 @@ let lastProductId = null;
 
 let isAdminLoggedIn = false;
 let currentOrdersFilter = 'all';
-
-// متغيرات المانيكان 3D
-let threeScene, threeCamera, threeRenderer, threeControls;
-let mannequinModel = null;
-let selectedTshirt = null;
-let selectedPants = null;
 
 const STORAGE_KEYS = {
   cart: 'qattan_cart',
@@ -1463,177 +1458,8 @@ function showPage(pageId) {
   if (pageId === 'favorites') renderFavorites();
   if (pageId === 'orders') renderCustomerOrders();
   if (pageId === 'tryon') initTryOn();
-    if (pageId === 'tryon') initTryOn();
   
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// =====================================================
-// Try On (3D Mannequin)
-// =====================================================
-function initTryOn() {
-  const container = document.getElementById('mannequinCanvas');
-  if (!container) return;
-  
-  // لو المانيكان اتعمل قبل كده، منعملش تاني
-  if (threeRenderer) return;
-
-  // 1. تجهيز المشهد
-  threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color(0x1a1a1a);
-
-  // 2. الكاميرا
-  threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-  threeCamera.position.set(0, 1.2, 3);
-
-  // 3. الريندرر
-  threeRenderer = new THREE.WebGLRenderer({ antialias: true });
-  threeRenderer.setSize(container.clientWidth, container.clientHeight);
-  threeRenderer.shadowMap.enabled = true;
-  container.appendChild(threeRenderer.domElement);
-
-  // 4. الإضاءة
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-  threeScene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(2, 4, 2);
-  dirLight.castShadow = true;
-  threeScene.add(dirLight);
-
-  const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
-  backLight.position.set(-2, 2, -2);
-  threeScene.add(backLight);
-
-  // 5. التحكم في الدوران
-  threeControls = new OrbitControls(threeCamera, threeRenderer.domElement);
-  threeControls.enableDamping = true;
-  threeControls.dampingFactor = 0.05;
-  threeControls.minDistance = 1.5;
-  threeControls.maxDistance = 5;
-  threeControls.target.set(0, 1, 0);
-
-  // 6. تحميل المانيكان
-  const loader = new GLTFLoader();
-  loader.load('assets/abstract-white-man-abstract_man_standing-v2.glb', (gltf) => {
-    mannequinModel = gltf.scene;
-    
-    // تعديل مقاس المانيكان لو كبير
-    const box = new THREE.Box3().setFromObject(mannequinModel);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-    
-    mannequinModel.position.x = -center.x;
-    mannequinModel.position.y = -box.min.y;
-    mannequinModel.position.z = -center.z;
-    
-    // تعديل الارتفاع
-    const scale = 1.8 / size.y;
-    mannequinModel.scale.set(scale, scale, scale);
-    
-    mannequinModel.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    
-    threeScene.add(mannequinModel);
-    
-    // تحديث الكاميرا
-    threeControls.target.set(0, 0.9, 0);
-    threeCamera.position.set(0, 1.2, 3);
-    threeControls.update();
-    
-    console.log('✅ Mannequin loaded');
-  }, undefined, (error) => {
-    console.error('❌ Error loading mannequin:', error);
-    showToast('خطأ في تحميل المانيكان');
-  });
-
-  // 7. أنيميشن
-  function animate() {
-    requestAnimationFrame(animate);
-    threeControls.update();
-    threeRenderer.render(threeScene, threeCamera);
-  }
-  animate();
-
-  // 8. التعامل مع تغيير حجم الشاشة
-  window.addEventListener('resize', () => {
-    if (!threeRenderer || !container) return;
-    threeCamera.aspect = container.clientWidth / container.clientHeight;
-    threeCamera.updateProjectionMatrix();
-    threeRenderer.setSize(container.clientWidth, container.clientHeight);
-  });
-
-  // 9. تجهيز قوائم اختيار التيشيرتات والبناطيل
-  populateTryOnSelectors();
-}
-
-function populateTryOnSelectors() {
-  const tshirtSelector = document.getElementById('tryOnTshirtSelector');
-  const pantsSelector = document.getElementById('tryOnPantsSelector');
-  if (!tshirtSelector || !pantsSelector) return;
-
-  const tshirts = products.filter(p => p.category === 'tshirts');
-  const pants = products.filter(p => p.category === 'pants');
-
-  function renderSelector(container, items, type) {
-    if (items.length === 0) {
-      container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-soft);">لا توجد منتجات متاحة</p>';
-      return;
-    }
-    container.innerHTML = items.map(p => `
-      <div class="try-on-item" data-id="${p.id}" data-type="${type}" title="${escapeHtml(p.name)}">
-        <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" alt="${escapeHtml(p.name)}">
-      </div>
-    `).join('');
-
-    container.querySelectorAll('.try-on-item').forEach(item => {
-      item.addEventListener('click', () => {
-        container.querySelectorAll('.try-on-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        
-        const id = parseInt(item.dataset.id);
-        const prod = products.find(x => x.id === id);
-        
-        if (type === 'tshirt') {
-          selectedTshirt = prod;
-        } else {
-          selectedPants = prod;
-        }
-        
-        applyClothingToMannequin();
-      });
-    });
-  }
-
-  renderSelector(tshirtSelector, tshirts, 'tshirt');
-  renderSelector(pantsSelector, pants, 'pants');
-}
-
-// دالة لتطبيق الملابس على المانيكان (هنستخدم صور الـ Texture)
-function applyClothingToMannequin() {
-  // ملحوظة: دي حاجة معقدة شوية في Three.js، لأننا محتاجين نحدد أماكن الـ UV Mapping على المانيكان.
-  // كحل مبدئي، هنعرض صور التيشيرت والبنطلون على الشاشة جنب المانيكان أو نغير لون المانيكان.
-  
-  // لكن الحل الصح اللي هنعمله في المرحلة الجاية:
-  // هنستخدم TextureLoader لتحميل صورة التيشيرت، ونطبقها على الـ Mesh بتاع المانيكان.
-  
-  if (!mannequinModel) return;
-  
-  // هنحاول نلاقي الـ Meshes الخاصة بالجسم
-  mannequinModel.traverse((child) => {
-    if (child.isMesh && child.material) {
-      // لو عايزين نغير لون المانيكان ككل (اختياري)
-      // child.material.color.set(0x333333);
-    }
-  });
-  
-  // TODO: تطبيق الصور على المانيكان
-  console.log('Selected T-shirt:', selectedTshirt?.name);
-  console.log('Selected Pants:', selectedPants?.name);
 }
 
 // =====================================================
@@ -2994,6 +2820,106 @@ async function init() {
   }, 400);
 }
 
+// =====================================================
+// Try On (3D Mannequin) — كود المانيكان
+// =====================================================
+function initTryOn() {
+  const container = document.getElementById('mannequinCanvas');
+  if (!container) return;
+  
+  // لو المانيكان اتعمل قبل كده، منعملش تاني
+  if (typeof THREE !== 'undefined' && threeRenderer) return;
+
+  // 1. تجهيز المشهد
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(0x1a1a1a);
+
+  // 2. الكاميرا
+  threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+  threeCamera.position.set(0, 1.2, 3);
+
+  // 3. الريندرر
+  threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+  threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  threeRenderer.shadowMap.enabled = true;
+  container.appendChild(threeRenderer.domElement);
+
+  // 4. الإضاءة
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  threeScene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2, 4, 2);
+  dirLight.castShadow = true;
+  threeScene.add(dirLight);
+
+  const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  backLight.position.set(-2, 2, -2);
+  threeScene.add(backLight);
+
+  // 5. التحكم في الدوران
+  threeControls = new OrbitControls(threeCamera, threeRenderer.domElement);
+  threeControls.enableDamping = true;
+  threeControls.dampingFactor = 0.05;
+  threeControls.minDistance = 1.5;
+  threeControls.maxDistance = 5;
+  threeControls.target.set(0, 1, 0);
+
+  // 6. تحميل المانيكان
+  const loader = new GLTFLoader();
+  loader.load('assets/abstract-white-man-abstract_man_standing-v2.glb', (gltf) => {
+    mannequinModel = gltf.scene;
+    
+    const box = new THREE.Box3().setFromObject(mannequinModel);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    
+    mannequinModel.position.x = -center.x;
+    mannequinModel.position.y = -box.min.y;
+    mannequinModel.position.z = -center.z;
+    
+    const scale = 1.8 / size.y;
+    mannequinModel.scale.set(scale, scale, scale);
+    
+    mannequinModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
+    threeScene.add(mannequinModel);
+    
+    threeControls.target.set(0, 0.9, 0);
+    threeCamera.position.set(0, 1.2, 3);
+    threeControls.update();
+    
+    console.log('✅ Mannequin loaded');
+  }, undefined, (error) => {
+    console.error('❌ Error loading mannequin:', error);
+    showToast('خطأ في تحميل المانيكان');
+  });
+
+  // 7. أنيميشن
+  function animate() {
+    requestAnimationFrame(animate);
+    threeControls.update();
+    threeRenderer.render(threeScene, threeCamera);
+  }
+  animate();
+
+  // 8. التعامل مع تغيير حجم الشاشة
+  window.addEventListener('resize', () => {
+    if (!threeRenderer || !container) return;
+    threeCamera.aspect = container.clientWidth / container.clientHeight;
+    threeCamera.updateProjectionMatrix();
+    threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  });
+
+  // 9. تجهيز قوائم اختيار التيشيرتات والبناطيل
+  populateTryOnSelectors();
+}
+
 function populateTryOnSelectors() {
   const tshirtSelector = document.getElementById('tryOnTshirtSelector');
   const pantsSelector = document.getElementById('tryOnPantsSelector');
@@ -3002,13 +2928,13 @@ function populateTryOnSelectors() {
   const tshirts = products.filter(p => p.category === 'tshirts');
   const pants = products.filter(p => p.category === 'pants');
 
-  function renderSelector(container, items) {
+  function renderSelector(container, items, type) {
     if (items.length === 0) {
       container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-soft);">لا توجد منتجات متاحة</p>';
       return;
     }
     container.innerHTML = items.map(p => `
-      <div class="try-on-item" data-id="${p.id}" data-type="${p.category}" title="${escapeHtml(p.name)}">
+      <div class="try-on-item" data-id="${p.id}" data-type="${type}" title="${escapeHtml(p.name)}">
         <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" alt="${escapeHtml(p.name)}">
       </div>
     `).join('');
@@ -3017,12 +2943,34 @@ function populateTryOnSelectors() {
       item.addEventListener('click', () => {
         container.querySelectorAll('.try-on-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
+        
+        const id = parseInt(item.dataset.id);
+        const prod = products.find(x => x.id === id);
+        
+        if (type === 'tshirt') {
+          selectedTshirt = prod;
+        } else {
+          selectedPants = prod;
+        }
+        
+        applyClothingToMannequin();
       });
     });
   }
 
-  renderSelector(tshirtSelector, tshirts);
-  renderSelector(pantsSelector, pants);
+  renderSelector(tshirtSelector, tshirts, 'tshirt');
+  renderSelector(pantsSelector, pants, 'pants');
+}
+
+function applyClothingToMannequin() {
+  if (!mannequinModel) return;
+  
+  // ملحوظة: لتطبيق الصور على المانيكان فعلياً في Three.js، محتاجين نستخدم TextureLoader ونحدد أماكن الـ UV mapping على المانيكان.
+  // ده بيحتاج تحديد الـ Meshes الخاصة بالجسم بدقة.
+  // دلوقتي هنعرض في الـ Console بس عشان نتأكد إن الاختيار شغال.
+  
+  console.log('Selected T-shirt:', selectedTshirt?.name);
+  console.log('Selected Pants:', selectedPants?.name);
 }
 
 init();
