@@ -17,6 +17,16 @@
     html { background: #faf8f3; }
     @keyframes spinLoader { to { transform: rotate(360deg); } }
   </style>
+
+  <!-- Three.js Setup -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body style="visibility: hidden;">
 
@@ -39,6 +49,7 @@
       <button class="nav-btn active" data-page="home"><span>المنتجات</span></button>
       <button class="nav-btn" data-page="new"><span>وصل حديثاً</span></button>
       <button class="nav-btn" data-page="offers"><span>العروض</span></button>
+      <button class="nav-btn" data-page="tryon"><span>جرّب المظهر</span></button>
       <button class="nav-btn" data-page="favorites"><span>المفضلة</span></button>
       <button class="nav-btn" data-page="orders"><span>طلباتي</span></button>
     </div>
@@ -62,7 +73,7 @@
   <div id="homePage" class="page active-page">
     <section class="hero">
       <div class="hero-content">
-        <p class="hero-eyebrow">مجموعة 2026</p>
+        <p class="hero-eyebrow">مجموعة 2025</p>
         <h1 class="hero-title">أناقة بلا مجهود</h1>
         <p class="hero-subtitle">ملابس مختارة بعناية لتناسب كل لحظة في يومك. جودة عالية، أسعار مناسبة، وتوصيل لكل مكان.</p>
         <div class="hero-actions">
@@ -129,6 +140,35 @@
       <p class="page-subtitle">استفد من خصوماتنا الحصرية</p>
     </div>
     <div id="offersContainer" class="offers-grid"></div>
+  </div>
+
+  <!-- صفحة جرّب المظهر الجديدة -->
+  <div id="tryOnPage" class="page">
+    <div class="page-header">
+      <h1 class="page-title">جرّب المظهر</h1>
+      <p class="page-subtitle">شوف اللبس على المانيكان ولفه من كل اتجاه</p>
+    </div>
+
+    <div class="try-on-container">
+      <!-- اختيار المنتجات -->
+      <div class="try-on-controls">
+        <h3><i class="fas fa-tshirt"></i> اختر التيشيرت</h3>
+        <div id="tryOnTshirtSelector" class="try-on-selector"></div>
+        
+        <h3><i class="fas fa-socks"></i> اختر البنطلون</h3>
+        <div id="tryOnPantsSelector" class="try-on-selector"></div>
+        
+        <button id="tryOnResetBtn" class="btn-outline" style="width:100%; margin-top:15px;">
+          <i class="fas fa-undo"></i> إعادة تعيين
+        </button>
+      </div>
+      
+      <!-- المانيكان -->
+      <div class="try-on-canvas-wrap">
+        <div id="mannequinCanvas"></div>
+        <p class="try-on-hint"><i class="fas fa-hand-pointer"></i> اسحب لتدوير المانيكان</p>
+      </div>
+    </div>
   </div>
 
   <div id="favoritesPage" class="page">
@@ -258,7 +298,7 @@
       <p><i class="fas fa-clock"></i> <span id="workingHours">١٠ ص — ١٠ م</span></p>
     </div>
     <div class="footer-bottom">
-      <p id="footerText">© 2026 قطان | جميع الحقوق محفوظة</p>
+      <p id="footerText">© 2025 قطان | جميع الحقوق محفوظة</p>
     </div>
   </div>
 </footer>
@@ -277,7 +317,6 @@
     <div class="drawer-header">
       <div class="drawer-logo">
         <h2 id="drawerStoreName">قطان</h2>
-        <span class="drawer-brand-tag">QATTAN</span>
       </div>
       <button class="drawer-close" id="drawerCloseBtn" aria-label="إغلاق">
         <i class="fas fa-times"></i>
@@ -297,6 +336,10 @@
         <i class="fas fa-tags"></i>
         <span>العروض</span>
       </button>
+      <button class="drawer-nav-btn" data-drawer-page="tryon">
+        <i class="fas fa-cube"></i>
+        <span>جرّب المظهر</span>
+      </button>
       <button class="drawer-nav-btn" data-drawer-page="favorites">
         <i class="fas fa-heart"></i>
         <span>المفضلة</span>
@@ -315,4 +358,4 @@
 
 <script type="module" src="script.js"></script>
 </body>
-</html> 
+</html>

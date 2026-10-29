@@ -13,6 +13,13 @@ import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstati
 import { firebaseConfig, ADMIN_EMAIL, DEFAULT_STORE_CONFIG } from "./firebase-config.js";
 
 // =====================================================
+// Three.js Imports (للمانيكان 3D)
+// =====================================================
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// =====================================================
 // Firebase Init
 // =====================================================
 const app = initializeApp(firebaseConfig);
@@ -24,8 +31,8 @@ const auth = getAuth(app);
 // =====================================================
 let storeConfig = { ...DEFAULT_STORE_CONFIG };
 let products = [];
-let offers = []; // العروض العادية (اللي بتظهر كإعلان)
-let bundles = []; // العروض المجمعة (Bundles)
+let offers = [];
+let bundles = [];
 let cart = [];
 let favorites = [];
 
@@ -36,6 +43,12 @@ let lastProductId = null;
 
 let isAdminLoggedIn = false;
 let currentOrdersFilter = 'all';
+
+// متغيرات المانيكان 3D
+let threeScene, threeCamera, threeRenderer, threeControls;
+let mannequinModel = null;
+let selectedTshirt = null;
+let selectedPants = null;
 
 const STORAGE_KEYS = {
   cart: 'qattan_cart',
@@ -164,7 +177,7 @@ async function loadStoreData() {
       if (data.storeConfig) storeConfig = { ...DEFAULT_STORE_CONFIG, ...data.storeConfig };
       if (Array.isArray(data.products)) products = data.products;
       if (Array.isArray(data.offers)) offers = data.offers;
-      if (Array.isArray(data.bundles)) bundles = data.bundles; // العروض المجمعة
+      if (Array.isArray(data.bundles)) bundles = data.bundles;
     }
   } catch (e) {
     console.error('loadStoreData error:', e);
@@ -174,7 +187,7 @@ async function loadStoreData() {
 async function saveStoreData() {
   try {
     const docRef = doc(db, 'storeData', 'main');
-    await setDoc(docRef, { storeConfig, products, offers, bundles }); // حفظ العروض المجمعة
+    await setDoc(docRef, { storeConfig, products, offers, bundles });
     console.log('✅ Store data saved successfully');
     return true;
   } catch (e) {
@@ -471,19 +484,18 @@ function renderOffers() {
     
     return `
       <div class="offer-card" style="background: linear-gradient(135deg, #fff8e1, #fdf2d0); border: 2px solid #f1c40f;">
-        <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;"> خصم ${b.discountPercent}%</span>
+        <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;">خصم ${b.discountPercent}%</span>
         <h3 class="offer-title" style="color:#b7330f;">${escapeHtml(b.title)}</h3>
         <p class="offer-desc" style="color:#7f5a1f; font-weight:600;">${escapeHtml(b.desc)}</p>
         <p style="font-size:0.9rem; color:#5a3d0c; margin-bottom:10px;">اطلب <strong>${b.requiredCount}</strong> قطعة بسعر مميز!</p>
-        <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff; cursor:pointer;">اكتشف العرض</button>
+        <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff;">اكتشف العرض</button>
       </div>
     `;
   }).join('');
   
-  // ✨ إصلاح: ربط الأزرار بالطريقة القديمة اللي كانت شغالة
-  container.querySelectorAll('.offer-action').forEach(btn => {
+  container.querySelectorAll('.offer-action[data-bundle-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const bid = btn.getAttribute('data-bundle-id');
+      const bid = btn.dataset.bundleId;
       showBundleDetails(bid);
     });
   });
@@ -1000,7 +1012,6 @@ function updateQty(key, delta) {
   if (!item) return;
   
   if (item.type === 'bundle') {
-    // الباقات لا يمكن تعديل كميتها
     return;
   }
   
@@ -1251,7 +1262,7 @@ async function sendOrder() {
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
   cart.forEach(c => {
     if (c.type === 'bundle') {
-      msg += ` [عرض] ${c.bundleTitle}\n`;
+      msg += `[عرض] ${c.bundleTitle}\n`;
       c.items.forEach(item => {
         msg += `   • ${item.productName} (${item.size}) ×${item.qty}\n`;
       });
@@ -1451,8 +1462,177 @@ function showPage(pageId) {
   if (pageId === 'offers') renderOffers();
   if (pageId === 'favorites') renderFavorites();
   if (pageId === 'orders') renderCustomerOrders();
+  if (pageId === 'tryon') initTryOn();
   
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =====================================================
+// Try On (3D Mannequin)
+// =====================================================
+function initTryOn() {
+  const container = document.getElementById('mannequinCanvas');
+  if (!container) return;
+  
+  // لو المانيكان اتعمل قبل كده، منعملش تاني
+  if (threeRenderer) return;
+
+  // 1. تجهيز المشهد
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(0x1a1a1a);
+
+  // 2. الكاميرا
+  threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+  threeCamera.position.set(0, 1.2, 3);
+
+  // 3. الريندرر
+  threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+  threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  threeRenderer.shadowMap.enabled = true;
+  container.appendChild(threeRenderer.domElement);
+
+  // 4. الإضاءة
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  threeScene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2, 4, 2);
+  dirLight.castShadow = true;
+  threeScene.add(dirLight);
+
+  const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  backLight.position.set(-2, 2, -2);
+  threeScene.add(backLight);
+
+  // 5. التحكم في الدوران
+  threeControls = new OrbitControls(threeCamera, threeRenderer.domElement);
+  threeControls.enableDamping = true;
+  threeControls.dampingFactor = 0.05;
+  threeControls.minDistance = 1.5;
+  threeControls.maxDistance = 5;
+  threeControls.target.set(0, 1, 0);
+
+  // 6. تحميل المانيكان
+  const loader = new GLTFLoader();
+  loader.load('assets/abstract-white-man-abstract_man_standing-v2.glb', (gltf) => {
+    mannequinModel = gltf.scene;
+    
+    // تعديل مقاس المانيكان لو كبير
+    const box = new THREE.Box3().setFromObject(mannequinModel);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    
+    mannequinModel.position.x = -center.x;
+    mannequinModel.position.y = -box.min.y;
+    mannequinModel.position.z = -center.z;
+    
+    // تعديل الارتفاع
+    const scale = 1.8 / size.y;
+    mannequinModel.scale.set(scale, scale, scale);
+    
+    mannequinModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
+    threeScene.add(mannequinModel);
+    
+    // تحديث الكاميرا
+    threeControls.target.set(0, 0.9, 0);
+    threeCamera.position.set(0, 1.2, 3);
+    threeControls.update();
+    
+    console.log('✅ Mannequin loaded');
+  }, undefined, (error) => {
+    console.error('❌ Error loading mannequin:', error);
+    showToast('خطأ في تحميل المانيكان');
+  });
+
+  // 7. أنيميشن
+  function animate() {
+    requestAnimationFrame(animate);
+    threeControls.update();
+    threeRenderer.render(threeScene, threeCamera);
+  }
+  animate();
+
+  // 8. التعامل مع تغيير حجم الشاشة
+  window.addEventListener('resize', () => {
+    if (!threeRenderer || !container) return;
+    threeCamera.aspect = container.clientWidth / container.clientHeight;
+    threeCamera.updateProjectionMatrix();
+    threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  });
+
+  // 9. تجهيز قوائم اختيار التيشيرتات والبناطيل
+  populateTryOnSelectors();
+}
+
+function populateTryOnSelectors() {
+  const tshirtSelector = document.getElementById('tryOnTshirtSelector');
+  const pantsSelector = document.getElementById('tryOnPantsSelector');
+  if (!tshirtSelector || !pantsSelector) return;
+
+  const tshirts = products.filter(p => p.category === 'tshirts');
+  const pants = products.filter(p => p.category === 'pants');
+
+  function renderSelector(container, items, type) {
+    if (items.length === 0) {
+      container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-soft);">لا توجد منتجات متاحة</p>';
+      return;
+    }
+    container.innerHTML = items.map(p => `
+      <div class="try-on-item" data-id="${p.id}" data-type="${type}" title="${escapeHtml(p.name)}">
+        <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" alt="${escapeHtml(p.name)}">
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.try-on-item').forEach(item => {
+      item.addEventListener('click', () => {
+        container.querySelectorAll('.try-on-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        
+        const id = parseInt(item.dataset.id);
+        const prod = products.find(x => x.id === id);
+        
+        if (type === 'tshirt') {
+          selectedTshirt = prod;
+        } else {
+          selectedPants = prod;
+        }
+        
+        applyClothingToMannequin();
+      });
+    });
+  }
+
+  renderSelector(tshirtSelector, tshirts, 'tshirt');
+  renderSelector(pantsSelector, pants, 'pants');
+}
+
+// دالة لتطبيق الملابس على المانيكان (هنستخدم صور الـ Texture)
+function applyClothingToMannequin() {
+  // ملحوظة: دي حاجة معقدة شوية في Three.js، لأننا محتاجين نحدد أماكن الـ UV Mapping على المانيكان.
+  // كحل مبدئي، هنعرض صور التيشيرت والبنطلون على الشاشة جنب المانيكان أو نغير لون المانيكان.
+  
+  // لكن الحل الصح اللي هنعمله في المرحلة الجاية:
+  // هنستخدم TextureLoader لتحميل صورة التيشيرت، ونطبقها على الـ Mesh بتاع المانيكان.
+  
+  if (!mannequinModel) return;
+  
+  // هنحاول نلاقي الـ Meshes الخاصة بالجسم
+  mannequinModel.traverse((child) => {
+    if (child.isMesh && child.material) {
+      // لو عايزين نغير لون المانيكان ككل (اختياري)
+      // child.material.color.set(0x333333);
+    }
+  });
+  
+  // TODO: تطبيق الصور على المانيكان
+  console.log('Selected T-shirt:', selectedTshirt?.name);
+  console.log('Selected Pants:', selectedPants?.name);
 }
 
 // =====================================================
@@ -1656,7 +1836,7 @@ function showAdminDashboard() {
         </div>
       </div>
       
-      <!-- تبويب العروض (اللي هو الباقات المجمعة) -->
+      <!-- تبويب العروض -->
       <div id="tab-offers" class="admin-tab-content">
         <div class="admin-section">
           <h3><i class="fas fa-gift"></i> إنشاء عرض (باقة كمية)</h3>
@@ -1950,8 +2130,6 @@ function showAdminDashboard() {
   // =====================================================
   // إدارة الباقات (Bundles) في الأدمن
   // =====================================================
-  
-  // تجهيز قائمة اختيار المنتجات للباقة
   function populateBundleProductSelector() {
     const sel = overlay.querySelector('#bundleProductSelector');
     if (!sel) return;
@@ -1990,8 +2168,7 @@ function showAdminDashboard() {
     };
   }
   
-  // إضافة منتج للعرض
-  let pendingBundleProducts = []; // المنتجات المضافة للعرض قبل الحفظ
+  let pendingBundleProducts = [];
   
   overlay.querySelector('#bundleAddProductBtn').onclick = () => {
     const sel = overlay.querySelector('#bundleProductSelector');
@@ -2008,7 +2185,6 @@ function showAdminDashboard() {
     
     if (selectedSizes.length === 0) { showToast('اختر مقاساً واحداً على الأقل'); return; }
     
-    // التحقق من عدم التكرار
     const existingIdx = pendingBundleProducts.findIndex(p => p.productId === pid);
     if (existingIdx !== -1) {
       pendingBundleProducts[existingIdx].sizes = selectedSizes;
@@ -2050,7 +2226,6 @@ function showAdminDashboard() {
     renderPendingBundleProducts();
   };
   
-  // حفظ الباقة
   overlay.querySelector('#createBundleBtn').onclick = async () => {
     const title = overlay.querySelector('#bundleTitle').value.trim();
     const desc = overlay.querySelector('#bundleDesc').value.trim();
@@ -2080,7 +2255,6 @@ function showAdminDashboard() {
     btn.innerHTML = '<i class="fas fa-save"></i> حفظ العرض';
     
     if (saved) {
-      // إعادة تعيين الحقول
       overlay.querySelector('#bundleTitle').value = '';
       overlay.querySelector('#bundleDesc').value = '';
       overlay.querySelector('#bundleDiscount').value = '';
@@ -2093,7 +2267,6 @@ function showAdminDashboard() {
     }
   };
   
-  // عرض الباقات الحالية
   function renderBundlesAdmin() {
     const cont = overlay.querySelector('#bundlesListAdmin');
     if (!cont) return;
@@ -2146,17 +2319,14 @@ function showAdminDashboard() {
     const bundle = bundles.find(b => b.id === id);
     if (!bundle) return;
     
-    // تعبئة الحقول
     overlay.querySelector('#bundleTitle').value = bundle.title;
     overlay.querySelector('#bundleDesc').value = bundle.desc;
     overlay.querySelector('#bundleDiscount').value = bundle.discountPercent;
     overlay.querySelector('#bundleRequiredCount').value = bundle.requiredCount;
     
-    // مسح المنتجات القديمة
     pendingBundleProducts = [...bundle.productSelections];
     renderPendingBundleProducts();
     
-    // تغيير زرار الحفظ ليعمل كتعديل
     const btn = overlay.querySelector('#createBundleBtn');
     const oldOnclick = btn.onclick;
     
@@ -2193,9 +2363,6 @@ function showAdminDashboard() {
     };
   };
   
-  // =====================================================
-  // عرض المنتجات في الأدمن (مع زرار التعديل)
-  // =====================================================
   function renderProductsAdmin() {
     const cont = overlay.querySelector('#productsListAdmin');
     if (!cont) return;
@@ -2248,9 +2415,6 @@ function showAdminDashboard() {
     });
   }
 
-  // =====================================================
-  // فتح صفحة تعديل المنتج
-  // =====================================================
   function openEditProductModal(productId) {
     const p = products.find(x => x.id === productId);
     if (!p) return;
@@ -2724,6 +2888,12 @@ async function init() {
 
   window.history.replaceState({ page: 'home' }, '', window.location.href);
   
+  document.getElementById('logoLink')?.addEventListener('click', () => {
+    showPage('home');
+    window.history.pushState({ page: 'home' }, '', window.location.href);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   document.getElementById('heroShopBtn')?.addEventListener('click', () => {
     document.querySelector('.section')?.scrollIntoView({ behavior: 'smooth' });
   });
@@ -2821,343 +2991,6 @@ async function init() {
     }
     document.body.style.visibility = 'visible';
   }, 400);
-
-    // ربط زرار اللوجو (عشان ينقل للرئيسية)
-  document.getElementById('logoLink')?.addEventListener('click', () => {
-    showPage('home');
-    window.history.pushState({ page: 'home' }, '', window.location.href);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
-// =====================================================
-// صفحة تفاصيل الباقة (مع الإضافة التلقائية)
-// =====================================================
-function showBundleDetails(bundleId) {
-  const bundle = bundles.find(b => b.id === bundleId);
-  if (!bundle) {
-    showToast('عذراً، العرض غير موجود');
-    return;
-  }
-  
-  // تجهيز المنتجات المتاحة
-  const availableProducts = [];
-  bundle.productSelections.forEach(sel => {
-    const prod = products.find(p => p.id === sel.productId);
-    if (prod) {
-      const availableSizes = {};
-      sel.sizes.forEach(size => {
-        const matrix = prod.sizeMatrix && prod.sizeMatrix[size];
-        if (matrix && matrix.qty > 0) {
-          availableSizes[size] = {
-            qty: matrix.qty,
-            price: matrix.price,
-            colors: matrix.colors || []
-          };
-        }
-      });
-      
-      if (Object.keys(availableSizes).length > 0) {
-        availableProducts.push({
-          product: prod,
-          availableSizes: availableSizes
-        });
-      }
-    }
-  });
-  
-  if (availableProducts.length === 0) {
-    showToast('عذراً، جميع منتجات هذا العرض غير متوفرة حالياً');
-    return;
-  }
-  
-  let selectedItems = []; // { productIdx, productId, productName, productImage, size, color, price }
-  
-  const modal = document.createElement('div');
-  modal.className = 'modal show';
-  modal.style.zIndex = '100000';
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
-      <div class="modal-header" style="position:sticky; top:0; background:var(--card-bg); z-index:2;">
-        <h3><i class="fas fa-gift" style="color:var(--accent);"></i> ${escapeHtml(bundle.title)}</h3>
-        <span class="modal-close" id="closeBundleModal">&times;</span>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:1rem; color:var(--text-soft); margin-bottom:15px;">${escapeHtml(bundle.desc)}</p>
-        
-        <div style="background:var(--accent-soft); padding:12px; border-radius:10px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <strong style="font-size:1.1rem;">عدد القطع المطلوبة: ${bundle.requiredCount}</strong>
-            <p style="font-size:0.85rem; color:var(--text-soft); margin-top:4px;">خصم ${bundle.discountPercent}% على إجمالي السعر</p>
-          </div>
-          <div style="font-size:1.3rem; font-weight:800; color:var(--danger);" id="bundleSelectedCount">0 / ${bundle.requiredCount}</div>
-        </div>
-        
-        <!-- قائمة المنتجات المختارة -->
-        <div id="selectedBundleItemsWrap" style="margin-bottom:15px;"></div>
-        
-        <div id="bundleProductsContainer">
-          ${availableProducts.map((item, idx) => {
-            const p = item.product;
-            const sizesList = Object.keys(item.availableSizes);
-            return `
-              <div class="bundle-product-card" data-product-idx="${idx}" style="border:1px solid var(--border-color); border-radius:12px; padding:15px; margin-bottom:15px; background:var(--card-bg);">
-                <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
-                  <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" style="width:70px; height:90px; border-radius:8px; object-fit:cover;">
-                  <div>
-                    <h4 style="font-size:1rem; font-weight:700;">${escapeHtml(p.name)}</h4>
-                    <p style="font-size:0.8rem; color:var(--text-soft);">${categoryLabels[p.category] || ''}</p>
-                  </div>
-                </div>
-                
-                <div style="margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px;">اختر المقاس:</label>
-                  <div class="bundle-size-selector" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    ${sizesList.map(s => {
-                      const sizeData = item.availableSizes[s];
-                      return `
-                        <button class="size-pill bundle-size-btn" 
-                                data-idx="${idx}" 
-                                data-size="${escapeHtml(s)}" 
-                                data-price="${sizeData.price}"
-                                data-qty="${sizeData.qty}"
-                                data-has-colors="${sizeData.colors && sizeData.colors.length > 0 ? 'true' : 'false'}"
-                                style="min-width:50px; padding:8px 14px;">
-                          ${escapeHtml(s)}
-                        </button>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
-                
-                <div class="bundle-color-selector-wrap" style="display:none; margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px;">اختر اللون:</label>
-                  <div class="bundle-color-selector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-                </div>
-
-              </div>
-            `;
-          }).join('')}
-        </div>
-        
-        <div style="background:var(--bg-body); padding:15px; border-radius:10px; margin-top:20px;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span>السعر الأصلي:</span>
-            <strong id="bundleOriginalPrice">0 ج.م</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--danger);">
-            <span>الخصم (${bundle.discountPercent}%):</span>
-            <strong id="bundleDiscountAmount">-0 ج.م</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:1.2rem; padding-top:10px; border-top:1px solid var(--border-color);">
-            <span>السعر النهائي:</span>
-            <strong id="bundleFinalPrice" style="color:var(--success);">0 ج.م</strong>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="position:sticky; bottom:0; background:var(--card-bg); z-index:2;">
-        <button id="addBundleToCartBtn" class="admin-btn" style="width:100%; justify-content:center; padding:14px; opacity:0.5;" disabled>
-          <i class="fas fa-shopping-bag"></i> أضف العرض للسلة
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  const modalEl = modal;
-  const countEl = modalEl.querySelector('#bundleSelectedCount');
-  const originalPriceEl = modalEl.querySelector('#bundleOriginalPrice');
-  const discountAmountEl = modalEl.querySelector('#bundleDiscountAmount');
-  const finalPriceEl = modalEl.querySelector('#bundleFinalPrice');
-  const addBtn = modalEl.querySelector('#addBundleToCartBtn');
-  const selectedItemsWrap = modalEl.querySelector('#selectedBundleItemsWrap');
-  
-  // دالة لتحديث الواجهة بأكملها
-  function updateUI() {
-    const totalItems = selectedItems.length;
-    const totalOriginalPrice = selectedItems.reduce((sum, s) => sum + s.price, 0);
-    const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
-    const finalPrice = totalOriginalPrice - discountAmount;
-    
-    // تحديث العداد والأسعار
-    countEl.textContent = `${totalItems} / ${bundle.requiredCount}`;
-    originalPriceEl.textContent = `${formatPrice(totalOriginalPrice)} ج.م`;
-    discountAmountEl.textContent = `-${formatPrice(discountAmount)} ج.م`;
-    finalPriceEl.textContent = `${formatPrice(finalPrice)} ج.م`;
-    
-    // تفعيل زرار الإضافة
-    if (totalItems === bundle.requiredCount) {
-      addBtn.disabled = false;
-      addBtn.style.opacity = '1';
-    } else {
-      addBtn.disabled = true;
-      addBtn.style.opacity = '0.5';
-    }
-    
-    // رسم قائمة المنتجات المختارة
-    if (selectedItems.length > 0) {
-      selectedItemsWrap.innerHTML = `
-        <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px; color:var(--accent);">المنتجات التي اخترتها:</label>
-        ${selectedItems.map((item, i) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; margin-bottom:6px;">
-            <div style="font-size:0.85rem;">
-              <strong>${escapeHtml(item.productName)}</strong>
-              <span style="color:var(--text-soft);"> - مقاس: ${escapeHtml(item.size)} ${item.color ? '• لون: ' + escapeHtml(item.color) : ''}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <strong style="font-size:0.85rem;">${formatPrice(item.price)} ج.م</strong>
-              <button onclick="window.__removeBundleItem(${i})" style="background:#ffe0e0; color:var(--danger); border:none; padding:4px 8px; border-radius:50%; cursor:pointer;"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-        `).join('')}
-      `;
-    } else {
-      selectedItemsWrap.innerHTML = '';
-    }
-  }
-
-  // إتاحة الحذف من الـ window عشان الزرار يشتغل
-  window.__removeBundleItem = (idx) => {
-    selectedItems.splice(idx, 1);
-    updateUI();
-  };
-  
-  // دالة مساعدة لإضافة المنتج للسلة
-  function tryAddProductToBundle(idx, size, color) {
-    if (selectedItems.length >= bundle.requiredCount) {
-      showToast(`لقد وصلت للحد الأقصى (${bundle.requiredCount}) قطع. يمكنك إزالة منتج وإضافة آخر.`);
-      return;
-    }
-    
-    const sizeData = availableProducts[idx].availableSizes[size];
-    const maxQty = sizeData.qty;
-    
-    // التحقق من المخزون
-    const countInBundle = selectedItems.filter(s => s.productId === availableProducts[idx].product.id && s.size === size).length;
-    if (countInBundle >= maxQty) {
-      showToast(`الكمية القصوى المتاحة لهذا المقاس ${maxQty}`);
-      return;
-    }
-    
-    selectedItems.push({
-      productIdx: idx,
-      productId: availableProducts[idx].product.id,
-      productName: availableProducts[idx].product.name,
-      productImage: availableProducts[idx].product.image,
-      size,
-      color,
-      price: sizeData.price
-    });
-    
-    updateUI();
-    showToast('تمت إضافة المنتج');
-  }
-  
-  // ربط أزرار المقاسات والألوان
-  modalEl.querySelectorAll('.bundle-product-card').forEach(card => {
-    const idx = parseInt(card.dataset.productIdx);
-    const colorWrap = card.querySelector('.bundle-color-selector-wrap');
-    const colorSelector = card.querySelector('.bundle-color-selector');
-    
-    // اختيار المقاس
-    card.querySelectorAll('.bundle-size-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const size = btn.dataset.size;
-        const item = availableProducts[idx];
-        const sizeData = item.availableSizes[size];
-        const hasColors = btn.dataset.hasColors === 'true';
-        
-        // تحديد الزرار
-        card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        
-        // عرض الألوان لو موجودة
-        if (hasColors) {
-          colorWrap.style.display = 'block';
-          colorSelector.innerHTML = sizeData.colors.map(cName => `
-            <button class="color-swatch bundle-color-btn" 
-                    data-color="${escapeHtml(cName)}" 
-                    style="background:${colorHexMap[cName] || '#ccc'};"
-                    title="${escapeHtml(cName)}"></button>
-          `).join('');
-          
-          colorSelector.querySelectorAll('.bundle-color-btn').forEach(cb => {
-            cb.addEventListener('click', () => {
-              const color = cb.dataset.color;
-              // تحديد اللون (بصرياً) وبعدها يتضاف على طول
-              colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
-              cb.classList.add('selected');
-              
-              tryAddProductToBundle(idx, size, color);
-              
-              // إزالة التحديد عشان يختار منتج تاني
-              setTimeout(() => {
-                card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
-                colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
-                colorWrap.style.display = 'none';
-              }, 300);
-            });
-          });
-        } else {
-          // لو مفيش ألوان، يتضاف فوراً بمجرد اختيار المقاس
-          colorWrap.style.display = 'none';
-          tryAddProductToBundle(idx, size, null);
-          
-          // إزالة التحديد
-          setTimeout(() => {
-            card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
-          }, 300);
-        }
-      });
-    });
-  });
-  
-  // إضافة للسلة
-  addBtn.addEventListener('click', () => {
-    if (selectedItems.length !== bundle.requiredCount) {
-      showToast(`يجب اختيار ${bundle.requiredCount} قطع بالظبط`);
-      return;
-    }
-    
-    const totalOriginalPrice = selectedItems.reduce((sum, s) => sum + s.price, 0);
-    const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
-    const finalPrice = totalOriginalPrice - discountAmount;
-    
-    const bundleKey = 'bundle_' + bundle.id + '_' + Date.now();
-    cart.push({
-      variantKey: bundleKey,
-      type: 'bundle',
-      bundleId: bundle.id,
-      bundleTitle: bundle.title,
-      items: selectedItems.map(s => ({
-        productId: s.productId,
-        productName: s.productName,
-        productImage: s.productImage,
-        size: s.size,
-        color: s.color,
-        qty: 1,
-        price: s.price
-      })),
-      originalPrice: totalOriginalPrice,
-      discountPercent: bundle.discountPercent,
-      discountAmount: discountAmount,
-      finalPrice: finalPrice,
-      quantity: 1
-    });
-    
-    saveCart();
-    renderCart();
-    updateCartCount();
-    modal.remove();
-    showToast('تمت إضافة العرض للسلة بنجاح');
-    playSound();
-  });
-  
-  modalEl.querySelector('#closeBundleModal').onclick = () => modal.remove();
-  modalEl.onclick = (e) => { if (e.target === modalEl) modalEl.remove(); };
-  
-  updateUI();
 }
 
 init();
