@@ -1463,6 +1463,7 @@ function showPage(pageId) {
   if (pageId === 'favorites') renderFavorites();
   if (pageId === 'orders') renderCustomerOrders();
   if (pageId === 'tryon') initTryOn();
+    if (pageId === 'tryon') initTryOn();
   
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2991,6 +2992,99 @@ async function init() {
     }
     document.body.style.visibility = 'visible';
   }, 400);
+}
+function initTryOn() {
+  const container = document.getElementById('mannequinCanvas');
+  if (!container) return;
+  if (threeRenderer) return;
+
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(0x1a1a1a);
+
+  threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+  threeCamera.position.set(0, 1.2, 3);
+
+  threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+  threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  threeRenderer.shadowMap.enabled = true;
+  container.appendChild(threeRenderer.domElement);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  threeScene.add(ambientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2, 4, 2);
+  dirLight.castShadow = true;
+  threeScene.add(dirLight);
+
+  threeControls = new OrbitControls(threeCamera, threeRenderer.domElement);
+  threeControls.enableDamping = true;
+  threeControls.minDistance = 1.5;
+  threeControls.maxDistance = 5;
+  threeControls.target.set(0, 1, 0);
+
+  const loader = new GLTFLoader();
+  loader.load('assets/abstract-white-man-abstract_man_standing-v2.glb', (gltf) => {
+    mannequinModel = gltf.scene;
+    const box = new THREE.Box3().setFromObject(mannequinModel);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    mannequinModel.position.x = -center.x;
+    mannequinModel.position.y = -box.min.y;
+    mannequinModel.position.z = -center.z;
+    const scale = 1.8 / size.y;
+    mannequinModel.scale.set(scale, scale, scale);
+    threeScene.add(mannequinModel);
+    threeControls.target.set(0, 0.9, 0);
+    threeCamera.position.set(0, 1.2, 3);
+    threeControls.update();
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    threeControls.update();
+    threeRenderer.render(threeScene, threeCamera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    if (!threeRenderer || !container) return;
+    threeCamera.aspect = container.clientWidth / container.clientHeight;
+    threeCamera.updateProjectionMatrix();
+    threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  });
+
+  populateTryOnSelectors();
+}
+
+function populateTryOnSelectors() {
+  const tshirtSelector = document.getElementById('tryOnTshirtSelector');
+  const pantsSelector = document.getElementById('tryOnPantsSelector');
+  if (!tshirtSelector || !pantsSelector) return;
+
+  const tshirts = products.filter(p => p.category === 'tshirts');
+  const pants = products.filter(p => p.category === 'pants');
+
+  function renderSelector(container, items) {
+    if (items.length === 0) {
+      container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-soft);">لا توجد منتجات متاحة</p>';
+      return;
+    }
+    container.innerHTML = items.map(p => `
+      <div class="try-on-item" data-id="${p.id}" data-type="${p.category}" title="${escapeHtml(p.name)}">
+        <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" alt="${escapeHtml(p.name)}">
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.try-on-item').forEach(item => {
+      item.addEventListener('click', () => {
+        container.querySelectorAll('.try-on-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  }
+
+  renderSelector(tshirtSelector, tshirts);
+  renderSelector(pantsSelector, pants);
 }
 
 init();
