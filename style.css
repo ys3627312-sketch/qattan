@@ -147,14 +147,6 @@ input, select, textarea {
   letter-spacing: 0.5px;
 }
 
-.logo .brand-tag {
-  font-size: 0.62rem;
-  letter-spacing: 4px;
-  color: var(--accent);
-  font-weight: 600;
-  margin-top: 3px;
-}
-
 .nav-links {
   display: flex;
   gap: 28px;
@@ -850,37 +842,9 @@ input, select, textarea {
 .product-gallery-main {
   border-radius: 20px;
   overflow: hidden;
-  aspect-ratio: 4/5;
+  aspect-ratio: 3/4;
   background: var(--bg-soft);
   margin-bottom: 12px;
-  max-height: 500px;
-  cursor: zoom-in;
-  position: relative;
-}
-
-.product-gallery-main::after {
-  content: '\f00e';
-  font-family: 'Font Awesome 6 Free';
-  font-weight: 900;
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.product-gallery-main:hover::after {
-  opacity: 1;
 }
 
 .product-gallery-main img {
@@ -1032,6 +996,20 @@ input, select, textarea {
   background: var(--btn-primary);
   color: var(--btn-primary-text);
   border-color: var(--btn-primary);
+}
+
+.size-pill.out-of-stock {
+  opacity: 0.4;
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.size-pill.out-of-stock small {
+  text-decoration: none;
+  display: inline-block;
 }
 
 .color-selector {
@@ -2409,268 +2387,4 @@ body.admin-open .whatsapp-fab {
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
-}
-.size-pill.out-of-stock {
-  opacity: 0.4;
-  background: var(--bg-soft);
-  color: var(--text-soft);
-  border-color: var(--border-color);
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
-.size-pill.out-of-stock small {
-  text-decoration: none;
-  display: inline-block;
-}
-/* ============================================
-   LIGHTBOX — عرض الصورة كاملة
-   ============================================ */
-.lightbox-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 99999;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  cursor: zoom-out;
-  backdrop-filter: blur(8px);
-}
-
-.lightbox-overlay.show {
-  display: flex;
-  animation: fadeInLightbox 0.25s ease;
-}
-
-@keyframes fadeInLightbox {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.lightbox-overlay img {
-  max-width: 95vw;
-  max-height: 90vh;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  animation: zoomInLightbox 0.25s ease;
-}
-
-@keyframes zoomInLightbox {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.lightbox-close {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s ease;
-  z-index: 100000;
-}
-
-.lightbox-close:hover {
-  background: rgba(255,255,255,0.3);
-}
-
-@media (max-width: 768px) {
-  .lightbox-overlay img {
-    max-width: 100vw;
-    max-height: 85vh;
-    border-radius: 8px;
-  }
-  .lightbox-close {
-    top: 12px;
-    left: 12px;
-    width: 40px;
-    height: 40px;
-  }
-}
-/* ============================================
-   Bundle Modal (نافذة اختيار الباقة)
-   ============================================ */
-.bundle-product-card {
-  transition: box-shadow 0.2s ease;
-}
-
-.bundle-product-card:hover {
-  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-}
-
-.bundle-size-btn.selected {
-  background: var(--btn-primary);
-  color: var(--btn-primary-text);
-  border-color: var(--btn-primary);
-}
-
-.bundle-color-btn {
-  width: 32px !important;
-  height: 32px !important;
-}
-
-.bundle-color-btn.selected {
-  border-color: var(--text-color);
-  box-shadow: 0 0 0 2px var(--bg-body) inset;
-  transform: scale(1.1);
-}
-
-.bundle-qty-minus,
-.bundle-qty-plus {
-  transition: background 0.2s ease;
-  border: none;
-  cursor: pointer;
-  color: var(--text-color);
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.bundle-qty-minus:hover,
-.bundle-qty-plus:hover {
-  background: var(--border-color) !important;
-}
-
-/* موبايل */
-@media (max-width: 768px) {
-  .bundle-product-card {
-    padding: 12px !important;
-  }
-  
-  .bundle-product-card img {
-    width: 55px !important;
-    height: 70px !important;
-  }
-  
-  .bundle-size-btn {
-    padding: 6px 10px !important;
-    font-size: 0.8rem !important;
-    min-width: 44px !important;
-  }
-}
-/* ============================================
-   Try-On Page (3D Mannequin)
-   ============================================ */
-.try-on-container {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 30px;
-  margin-top: 20px;
-  margin-bottom: 60px;
-}
-
-.try-on-controls {
-  background: var(--card-bg);
-  padding: 24px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-  height: fit-content;
-}
-
-.try-on-controls h3 {
-  font-size: 1rem;
-  margin-bottom: 12px;
-  margin-top: 20px;
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.try-on-controls h3:first-child {
-  margin-top: 0;
-}
-
-.try-on-selector {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 5px;
-}
-
-.try-on-item {
-  width: 60px;
-  height: 75px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid transparent;
-  cursor: pointer;
-  background: var(--bg-soft);
-  transition: all 0.2s ease;
-}
-
-.try-on-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.try-on-item.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-}
-
-.try-on-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.try-on-canvas-wrap {
-  position: relative;
-  background: #1a1a1a; /* خلفية غامقة عشان المانيكان الأسود يبان */
-  border-radius: 16px;
-  overflow: hidden;
-  aspect-ratio: 4/5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#mannequinCanvas {
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-}
-
-#mannequinCanvas:active {
-  cursor: grabbing;
-}
-
-.try-on-hint {
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  backdrop-filter: blur(4px);
-  pointer-events: none;
-}
-
-/* موبايل */
-@media (max-width: 768px) {
-  .try-on-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .try-on-canvas-wrap {
-    aspect-ratio: 3/4;
-  }
 }

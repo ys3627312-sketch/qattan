@@ -35,8 +35,7 @@
   .menu-toggle {
     display: flex !important;
     order: 1 !important;
-    z-index: 100001 !important;
-    position: relative !important;
+    z-index: 100 !important;
   }
   
   .logo {
@@ -49,23 +48,6 @@
     margin-right: auto !important;
     gap: 4px !important;
     z-index: 100 !important;
-  }
-
-  /* --- الطبقة السوداء اللي ورا القائمة (تحت القائمة) --- */
-  .nav-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0,0,0,0.55) !important;
-    backdrop-filter: none !important;
-    z-index: 99997 !important;
-    display: none !important;
-    opacity: 0 !important;
-    transition: opacity 0.3s ease !important;
-  }
-  
-  .nav-overlay.active {
-    display: block !important;
-    opacity: 1 !important;
   }
 
   /* --- القائمة الجانبية (Drawer) --- */
@@ -81,17 +63,16 @@
     flex-direction: column !important;
     justify-content: flex-start !important;
     align-items: stretch !important;
-    padding: 80px 0 0 0 !important;
+    padding: 0 !important;
     gap: 0 !important;
     
     transform: translateX(-105%) !important;
     transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    z-index: 99998 !important;
+    z-index: 99999 !important;
     
     visibility: hidden !important;
     opacity: 0 !important;
     overflow-y: auto !important;
-    display: flex !important;
   }
   
   .nav-links.active {
@@ -100,14 +81,10 @@
     opacity: 1 !important;
   }
 
-  /* عنوان "القائمة" أعلى الـ drawer */
+  /* هيدر جوه القائمة */
   .nav-links::before {
     content: 'القائمة';
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    left: 0 !important;
-    display: block !important;
+    display: block;
     font-family: 'Playfair Display', serif;
     font-size: 1.3rem;
     font-weight: 800;
@@ -116,8 +93,46 @@
     border-bottom: 1px solid var(--border-color);
     letter-spacing: 1px;
     text-align: right;
-    background: var(--card-bg);
-    z-index: 100000;
+  }
+
+  /* زرار إغلاق القائمة */
+  .nav-close-btn {
+    position: absolute !important;
+    top: 18px !important;
+    left: 18px !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: var(--bg-soft) !important;
+    color: var(--text-color) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    z-index: 100001 !important;
+    border: none !important;
+  }
+  
+  .nav-close-btn:hover {
+    background: var(--border-color) !important;
+  }
+  
+  /* --- الطبقة السوداء اللي ورا القائمة --- */
+  .nav-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.55) !important;
+    backdrop-filter: none !important;
+    z-index: 99998 !important;
+    display: none !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+  }
+  
+  .nav-overlay.active {
+    display: block !important;
+    opacity: 1 !important;
   }
   
   /* --- زراير القائمة --- */
@@ -136,14 +151,12 @@
     pointer-events: auto !important;
     text-align: right !important;
     transition: background 0.2s ease !important;
-    cursor: pointer !important;
   }
 
   .nav-btn span {
     display: block !important;
     width: 100% !important;
     text-align: right !important;
-    pointer-events: none !important;
   }
 
   .nav-btn:hover,
@@ -373,179 +386,4 @@
 /* منع سكرول الموقع لما الأدمن يفتح */
 body.admin-open { 
   overflow: hidden !important; 
-}
-/* ==========================================
-   MOBILE DRAWER — قائمة الموبايل المستقلة
-   ========================================== */
-
-/* نخفي القائمة القديمة على الموبايل */
-@media (max-width: 768px) {
-  .nav-links {
-    display: none !important;
-  }
-}
-
-/* الـ drawer مخفي افتراضياً */
-.mobile-drawer {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobile-drawer {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    pointer-events: none;
-  }
-  
-  .mobile-drawer-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-  
-  .mobile-drawer-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 300px;
-    max-width: 85vw;
-    height: 100%;
-    background: var(--card-bg);
-    box-shadow: 4px 0 25px rgba(0,0,0,0.25);
-    transform: translateX(-105%);
-    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    pointer-events: auto;
-  }
-  
-  /* لما الـ drawer يفتح */
-  .mobile-drawer.open {
-    pointer-events: auto;
-  }
-  
-  .mobile-drawer.open .mobile-drawer-overlay {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  
-  .mobile-drawer.open .mobile-drawer-panel {
-    transform: translateX(0);
-  }
-  
-  /* هيدر الـ drawer */
-  .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .drawer-logo h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--text-color);
-    line-height: 1;
-  }
-  
-  .drawer-brand-tag {
-    font-size: 0.55rem;
-    letter-spacing: 3px;
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 2px;
-    display: block;
-  }
-  
-  .drawer-close {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--bg-soft);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  .drawer-close:hover {
-    background: var(--border-color);
-  }
-  
-  /* أزرار التنقل */
-  .drawer-nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-  
-  .drawer-nav-btn {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    padding: 16px 22px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-color);
-    font-size: 1rem;
-    font-weight: 600;
-    font-family: inherit;
-    text-align: right;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  .drawer-nav-btn i {
-    width: 24px;
-    text-align: center;
-    color: var(--text-soft);
-    font-size: 1rem;
-  }
-  
-  .drawer-nav-btn:hover,
-  .drawer-nav-btn.active {
-    background: var(--bg-soft);
-    color: var(--text-color);
-  }
-  
-  .drawer-nav-btn.active {
-    border-right: 3px solid var(--accent);
-    padding-right: 19px;
-  }
-  
-  .drawer-nav-btn.active i {
-    color: var(--accent);
-  }
-  
-  /* فوتر الـ drawer */
-  .drawer-footer {
-    padding: 18px 22px;
-    border-top: 1px solid var(--border-color);
-    background: var(--bg-soft);
-  }
-  
-  .drawer-footer p {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: var(--text-soft);
-  }
-  
-  .drawer-footer i {
-    color: var(--accent);
-  }
 }
