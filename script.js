@@ -5,7 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc,
-  collection, addDoc, getDocs, updateDoc,
+  collection, addDoc, getDocs, updateDoc, deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -264,6 +264,56 @@ async function updateOrderStatusInFirebase(firestoreId, status) {
   } catch (e) {
     console.error('updateOrderStatus error:', e);
     return false;
+  }
+}
+
+// =====================================================
+// Firebase — Reviews (التقييمات)
+// =====================================================
+async function saveReviewToFirebase(productId, reviewData) {
+  try {
+    const ref = await addDoc(collection(db, 'reviews'), {
+      productId,
+      ...reviewData,
+      createdAt: serverTimestamp()
+    });
+    return ref.id;
+  } catch (e) {
+    console.error('saveReview error:', e);
+    return null;
+  }
+}
+
+async function loadReviewsForProduct(productId) {
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+    list = list.filter(r => r.productId === productId);
+    list.sort((a, b) => {
+      const da = toDate(a.createdAt) || new Date(a.date || 0);
+      const db_ = toDate(b.createdAt) || new Date(b.date || 0);
+      return db_ - da;
+    });
+    return list;
+  } catch (e) {
+    console.error('loadReviews error:', e);
+    return [];
+  }
+}
+
+async function loadAllReviews() {
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    let list = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+    list.sort((a, b) => {
+      const da = toDate(a.createdAt) || new Date(a.date || 0);
+      const db_ = toDate(b.createdAt) || new Date(b.date || 0);
+      return db_ - da;
+    });
+    return list;
+  } catch (e) {
+    console.error('loadAllReviews error:', e);
+    return [];
   }
 }
 
@@ -626,7 +676,7 @@ function showProductDetails(id) {
   window.history.pushState({ page: 'productDetails', id: id }, '', window.location.href);
 }
 
-function renderProductDetails(id) {
+async function renderProductDetails(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
   
@@ -641,38 +691,43 @@ function renderProductDetails(id) {
   const allImgs = [p.image, ...(p.gallery || [])].filter(Boolean);
   const uniqueImgs = [...new Set(allImgs)];
   
+  // جلب التقييمات من Firebase
   let reviewsHtml = '';
-  if (p.ratings && p.ratings.length > 0) {
-    reviewsHtml = p.ratings.map(r => {
-      let repliesHtml = '';
-      if (r.replies && r.replies.length > 0) {
-        repliesHtml = r.replies.map(reply => `
-          <div class="reply-item store-reply">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-              <strong><span class="store-badge">إدارة المتجر</span> ${escapeHtml(reply.userName || 'المتجر')}</strong>
+  try {
+    const reviews = await loadReviewsForProduct(p.id);
+    if (reviews.length > 0) {
+      reviewsHtml = reviews.map(r => {
+        let repliesHtml = '';
+        if (r.replies && r.replies.length > 0) {
+          repliesHtml = r.replies.map(reply => `
+            <div class="reply-item store-reply">
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <strong><span class="store-badge">إدارة المتجر</span> ${escapeHtml(reply.userName || 'المتجر')}</strong>
+              </div>
+              <p style="font-size:0.9rem; margin:0;">${escapeHtml(reply.text)}</p>
             </div>
-            <p style="font-size:0.9rem; margin:0;">${escapeHtml(reply.text)}</p>
-          </div>
-        `).join('');
-      }
-      
-      return `
-        <div class="review-item">
-          <div class="review-header">
-            <div class="review-user">
-              <i class="fas fa-user-circle"></i>
-              <span>${escapeHtml(r.userName)}</span>
+          `).join('');
+        }
+        return `
+          <div class="review-item">
+            <div class="review-header">
+              <div class="review-user">
+                <i class="fas fa-user-circle"></i>
+                <span>${escapeHtml(r.userName)}</span>
+              </div>
+              <div class="review-stars">${renderStars(r.rating)}</div>
+              <div class="review-date">${new Date(r.date || toDate(r.createdAt)).toLocaleDateString('ar-EG')}</div>
             </div>
-            <div class="review-stars">${renderStars(r.rating)}</div>
-            <div class="review-date">${new Date(r.date).toLocaleDateString('ar-EG')}</div>
+            ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
+            ${repliesHtml}
           </div>
-          ${r.comment ? `<p class="review-comment">${escapeHtml(r.comment)}</p>` : ''}
-          ${repliesHtml}
-        </div>
-      `;
-    }).join('');
-  } else {
-    reviewsHtml = '<div class="no-reviews">لا توجد تقييمات بعد، كن أول من يقيم!</div>';
+        `;
+      }).join('');
+    } else {
+      reviewsHtml = '<div class="no-reviews">لا توجد تقييمات بعد، كن أول من يقيم!</div>';
+    }
+  } catch(e) {
+    reviewsHtml = '<div class="no-reviews">حدث خطأ في جلب التقييمات</div>';
   }
   
   container.innerHTML = `
@@ -877,16 +932,20 @@ function renderProductDetails(id) {
     if (!name) { showToast('الرجاء إدخال اسمك'); return; }
     if (selectedRating === 0) { showToast('الرجاء اختيار تقييم'); return; }
     
-    if (!p.ratings) p.ratings = [];
-    p.ratings.push({ userName: name, rating: selectedRating, comment, date: new Date().toISOString() });
-    p.avgRating = p.ratings.reduce((s, r) => s + r.rating, 0) / p.ratings.length;
-    p.totalRatings = p.ratings.length;
+    const reviewData = {
+      userName: name,
+      rating: selectedRating,
+      comment,
+      date: new Date().toISOString()
+    };
     
-    const saved = await saveStoreData();
-    if (saved) {
+    const reviewId = await saveReviewToFirebase(p.id, reviewData);
+    if (reviewId) {
       showToast('شكراً لتقييمك!');
       playSound();
       renderProductDetails(p.id);
+    } else {
+      showToast('فشل إرسال التقييم، حاول تاني');
     }
   });
 }
@@ -2826,83 +2885,100 @@ function showAdminDashboard() {
     };
   });
 
-  function renderReviewsAdmin() {
+  async function renderReviewsAdmin() {
     const cont = overlay.querySelector('#reviewsListAdmin');
     if (!cont) return;
     
-    let allReviews = [];
-    products.forEach(p => {
-      if (p.ratings && p.ratings.length > 0) {
-        p.ratings.forEach((r, idx) => {
-          allReviews.push({ productId: p.id, productName: p.name, reviewIdx: idx, review: r });
-        });
-      }
-    });
+    cont.innerHTML = '<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>';
     
-    if (allReviews.length === 0) {
-      cont.innerHTML = '<p style="text-align:center; padding:20px;">لا توجد تقييمات حتى الآن</p>';
-      return;
-    }
-    
-    allReviews.sort((a, b) => new Date(b.review.date) - new Date(a.review.date));
-    
-    cont.innerHTML = allReviews.map(item => {
-      const repliesHtml = (item.review.replies && item.review.replies.length > 0) ? item.review.replies.map(reply => `
-        <div class="reply-item store-reply" style="margin-bottom:8px;">
-          <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">المتجر (إدارة):</strong>
-          <span style="font-size:0.9rem;">${escapeHtml(reply.text)}</span>
-        </div>
-      `).join('') : '';
+    try {
+      const reviews = await loadAllReviews();
       
-      return `
-        <div class="admin-review-card">
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <strong style="color:var(--accent);">${escapeHtml(item.productName)}</strong>
-            <span style="font-size:0.75rem; opacity:0.6;">${new Date(item.review.date).toLocaleDateString('ar-EG')}</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(item.review.userName)}</span>
-            <div class="stars">${renderStars(item.review.rating)}</div>
-          </div>
-          ${item.review.comment ? `<p style="font-size:0.9rem; margin-bottom:10px; color:var(--text-soft);">${escapeHtml(item.review.comment)}</p>` : ''}
-          
-          ${repliesHtml}
-          
-          <div class="admin-reply-box">
-            <input type="text" placeholder="اكتب ردك هنا..." class="admin-reply-input" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">
-            <button class="admin-reply-btn" data-pid="${item.productId}" data-ridx="${item.reviewIdx}">رد</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    cont.querySelectorAll('.admin-reply-btn').forEach(btn => {
-      btn.onclick = async () => {
-        const pid = parseInt(btn.dataset.pid);
-        const ridx = parseInt(btn.dataset.ridx);
-        const input = cont.querySelector(`.admin-reply-input[data-pid="${pid}"][data-ridx="${ridx}"]`);
-        const text = input?.value.trim();
+      if (reviews.length === 0) {
+        cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد تقييمات حتى الآن</p>';
+        return;
+      }
+      
+      cont.innerHTML = reviews.map(r => {
+        const prod = products.find(p => p.id === r.productId);
+        const productName = prod ? prod.name : 'منتج محذوف';
         
-        if (!text) { showToast('أدخل نص الرد'); return; }
+        const repliesHtml = (r.replies && r.replies.length > 0) ? r.replies.map(reply => `
+          <div class="reply-item store-reply" style="margin-bottom:8px;">
+            <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">المتجر (إدارة):</strong>
+            <span style="font-size:0.9rem;">${escapeHtml(reply.text)}</span>
+          </div>
+        `).join('') : '';
         
-        const product = products.find(p => p.id === pid);
-        if (product && product.ratings && product.ratings[ridx]) {
-          if (!product.ratings[ridx].replies) product.ratings[ridx].replies = [];
-          product.ratings[ridx].replies.push({ text, userName: "المتجر", date: new Date().toISOString() });
+        return `
+          <div class="admin-review-card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <strong style="color:var(--accent);">${escapeHtml(productName)}</strong>
+              <span style="font-size:0.75rem; opacity:0.6;">${new Date(r.date || toDate(r.createdAt)).toLocaleDateString('ar-EG')}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(r.userName)}</span>
+              <div class="stars">${renderStars(r.rating)}</div>
+            </div>
+            ${r.comment ? `<p style="font-size:0.9rem; margin-bottom:10px; color:var(--text-soft);">${escapeHtml(r.comment)}</p>` : ''}
+            
+            ${repliesHtml}
+            
+            <div class="admin-reply-box">
+              <input type="text" placeholder="اكتب ردك هنا..." class="admin-reply-input" data-rid="${r.firestoreId}">
+              <button class="admin-reply-btn" data-rid="${r.firestoreId}">رد</button>
+            </div>
+            <button class="admin-del-btn" data-del-review="${r.firestoreId}" style="margin-top:8px;width:100%;">
+              <i class="fas fa-trash"></i> حذف التقييم
+            </button>
+          </div>
+        `;
+      }).join('');
+      
+      cont.querySelectorAll('.admin-reply-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const rid = btn.dataset.rid;
+          const input = cont.querySelector(`.admin-reply-input[data-rid="${rid}"]`);
+          const text = input?.value.trim();
           
-          btn.disabled = true;
-          btn.textContent = '...';
-          const saved = await saveStoreData();
-          if (saved) {
-            renderReviewsAdmin();
-            showToast('✅ تم إضافة الرد');
-          } else {
-            btn.disabled = false;
-            btn.textContent = 'رد';
+          if (!text) { showToast('أدخل نص الرد'); return; }
+          
+          try {
+            const reviewDoc = await getDoc(doc(db, 'reviews', rid));
+            if (reviewDoc.exists()) {
+              const data = reviewDoc.data();
+              const replies = data.replies || [];
+              replies.push({ text, userName: 'المتجر', date: new Date().toISOString() });
+              await updateDoc(doc(db, 'reviews', rid), { replies });
+              renderReviewsAdmin();
+              showToast('✅ تم إضافة الرد');
+            }
+          } catch(e) {
+            console.error(e);
+            showToast('فشل إضافة الرد');
           }
-        }
-      };
-    });
+        };
+      });
+      
+      cont.querySelectorAll('[data-del-review]').forEach(btn => {
+        btn.onclick = () => {
+          const rid = btn.dataset.delReview;
+          showConfirm('حذف هذا التقييم نهائياً؟', async () => {
+            try {
+              await deleteDoc(doc(db, 'reviews', rid));
+              renderReviewsAdmin();
+              showToast('✅ تم حذف التقييم');
+            } catch(e) {
+              console.error(e);
+              showToast('فشل حذف التقييم');
+            }
+          });
+        };
+      });
+    } catch(e) {
+      console.error(e);
+      cont.innerHTML = '<p style="text-align:center;padding:20px;">حدث خطأ في التحميل</p>';
+    }
   }
   
   renderProductsAdmin();
