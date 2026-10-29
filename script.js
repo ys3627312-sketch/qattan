@@ -452,7 +452,6 @@ function renderOffers() {
   }
   
   container.innerHTML = bundles.map(b => {
-    // حساب أقل سعر ممكن للعرض (بناءً على أقل سعر للمنتجات)
     let minPrice = 0;
     b.productSelections.forEach(sel => {
       const prod = products.find(p => p.id === sel.productId);
@@ -467,7 +466,6 @@ function renderOffers() {
       }
     });
     
-    // إجمالي السعر قبل الخصم = السعر الأدنى * عدد القطع المطلوبة
     const totalBeforeDiscount = minPrice * b.requiredCount;
     const finalPrice = totalBeforeDiscount - (totalBeforeDiscount * (b.discountPercent / 100));
     
@@ -477,15 +475,20 @@ function renderOffers() {
         <h3 class="offer-title" style="color:#b7330f;">${escapeHtml(b.title)}</h3>
         <p class="offer-desc" style="color:#7f5a1f; font-weight:600;">${escapeHtml(b.desc)}</p>
         <p style="font-size:0.9rem; color:#5a3d0c; margin-bottom:10px;">اطلب <strong>${b.requiredCount}</strong> قطعة بسعر مميز!</p>
-        <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff;">اكتشف العرض</button>
+        <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff; cursor:pointer;">اكتشف العرض</button>
       </div>
     `;
   }).join('');
   
-  container.querySelectorAll('.offer-action[data-bundle-id]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bid = btn.dataset.bundleId;
-      openBundleModal(bid);
+  // ✨ التعديل هنا: ربط الأزرار بطريقة مضمونة
+  container.querySelectorAll('.offer-action').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const bid = this.getAttribute('data-bundle-id');
+      if (bid && typeof openBundleModal === 'function') {
+        openBundleModal(bid);
+      } else {
+        console.error('❌ دالة openBundleModal مش موجودة أو الـ ID غلط:', bid);
+      }
     });
   });
 }
@@ -2809,6 +2812,13 @@ async function init() {
     }
     document.body.style.visibility = 'visible';
   }, 400);
+
+    // ربط زرار اللوجو (عشان ينقل للرئيسية)
+  document.getElementById('logoLink')?.addEventListener('click', () => {
+    showPage('home');
+    window.history.pushState({ page: 'home' }, '', window.location.href);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 init();
