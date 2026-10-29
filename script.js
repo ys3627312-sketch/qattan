@@ -446,72 +446,42 @@ function renderOffers() {
   const container = document.getElementById('offersContainer');
   if (!container) return;
   
-  if (offers.length === 0 && bundles.length === 0) {
+  if (bundles.length === 0) {
     container.innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p>لا توجد عروض حالياً</p></div>';
     return;
   }
   
-  let html = '';
-  
-  // عرض العروض العادية (الإعلانات)
-  if (offers.length > 0) {
-    html += offers.map(o => `
-      <div class="offer-card">
-        <span class="offer-tag">${escapeHtml(o.tag || 'عرض')}</span>
-        <h3 class="offer-title">${escapeHtml(o.title || '')}</h3>
-        <p class="offer-desc">${escapeHtml(o.desc || '')}</p>
-        ${o.isAvailable !== false && o.productId ? `
-          <button class="offer-action" data-offer-pid="${o.productId}">اكتشف العرض</button>
-        ` : '<span style="opacity:0.5;">غير متوفر</span>'}
-      </div>
-    `).join('');
-  }
-  
-  // عرض الباقات (Bundles)
-  if (bundles.length > 0) {
-    html += bundles.map(b => {
-      // حساب أقل سعر ممكن للعرض (بناءً على أقل سعر للمنتجات)
-      let minPrice = 0;
-      b.productSelections.forEach(sel => {
-        const prod = products.find(p => p.id === sel.productId);
-        if (prod) {
-          let lowestPrice = Infinity;
-          sel.sizes.forEach(s => {
-            const qty = prod.sizeMatrix && prod.sizeMatrix[s] ? prod.sizeMatrix[s].qty : 0;
-            const price = prod.sizeMatrix && prod.sizeMatrix[s] ? prod.sizeMatrix[s].price : prod.price;
-            if (qty > 0 && price < lowestPrice) lowestPrice = price;
-          });
-          if (lowestPrice !== Infinity) minPrice += lowestPrice;
-        }
-      });
-      
-      // إجمالي السعر قبل الخصم = السعر الأدنى * عدد القطع المطلوبة
-      const totalBeforeDiscount = minPrice * b.requiredCount;
-      const finalPrice = totalBeforeDiscount - (totalBeforeDiscount * (b.discountPercent / 100));
-      
-      return `
-        <div class="offer-card" style="background: linear-gradient(135deg, #fff8e1, #fdf2d0); border: 2px solid #f1c40f;">
-          <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;">🔥 خصم ${b.discountPercent}%</span>
-          <h3 class="offer-title" style="color:#b7330f;">${escapeHtml(b.title)}</h3>
-          <p class="offer-desc" style="color:#7f5a1f; font-weight:600;">${escapeHtml(b.desc)}</p>
-          <p style="font-size:0.9rem; color:#5a3d0c; margin-bottom:10px;">اطلب <strong>${b.requiredCount}</strong> قطعة بسعر مميز!</p>
-          <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff;">اكتشف العرض</button>
-        </div>
-      `;
-    }).join('');
-  }
-  
-  container.innerHTML = html;
-  
-  // ربط أزرار العروض العادية
-  container.querySelectorAll('.offer-action[data-offer-pid]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pid = parseInt(btn.dataset.offerPid);
-      showProductDetails(pid);
+  container.innerHTML = bundles.map(b => {
+    // حساب أقل سعر ممكن للعرض (بناءً على أقل سعر للمنتجات)
+    let minPrice = 0;
+    b.productSelections.forEach(sel => {
+      const prod = products.find(p => p.id === sel.productId);
+      if (prod) {
+        let lowestPrice = Infinity;
+        sel.sizes.forEach(s => {
+          const qty = prod.sizeMatrix && prod.sizeMatrix[s] ? prod.sizeMatrix[s].qty : 0;
+          const price = prod.sizeMatrix && prod.sizeMatrix[s] ? prod.sizeMatrix[s].price : prod.price;
+          if (qty > 0 && price < lowestPrice) lowestPrice = price;
+        });
+        if (lowestPrice !== Infinity) minPrice += lowestPrice;
+      }
     });
-  });
+    
+    // إجمالي السعر قبل الخصم = السعر الأدنى * عدد القطع المطلوبة
+    const totalBeforeDiscount = minPrice * b.requiredCount;
+    const finalPrice = totalBeforeDiscount - (totalBeforeDiscount * (b.discountPercent / 100));
+    
+    return `
+      <div class="offer-card" style="background: linear-gradient(135deg, #fff8e1, #fdf2d0); border: 2px solid #f1c40f;">
+        <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;">🔥 خصم ${b.discountPercent}%</span>
+        <h3 class="offer-title" style="color:#b7330f;">${escapeHtml(b.title)}</h3>
+        <p class="offer-desc" style="color:#7f5a1f; font-weight:600;">${escapeHtml(b.desc)}</p>
+        <p style="font-size:0.9rem; color:#5a3d0c; margin-bottom:10px;">اطلب <strong>${b.requiredCount}</strong> قطعة بسعر مميز!</p>
+        <button class="offer-action" data-bundle-id="${b.id}" style="background:#e74c3c; color:#fff;">اكتشف العرض</button>
+      </div>
+    `;
+  }).join('');
   
-  // ربط أزرار الباقات
   container.querySelectorAll('.offer-action[data-bundle-id]').forEach(btn => {
     btn.addEventListener('click', () => {
       const bid = btn.dataset.bundleId;
@@ -921,365 +891,6 @@ function renderProductDetails(id) {
       renderProductDetails(p.id);
     }
   });
-}
-
-// =====================================================
-// نافذة اختيار الباقة (Bundle Modal)
-// =====================================================
-function openBundleModal(bundleId) {
-  const bundle = bundles.find(b => b.id === bundleId);
-  if (!bundle) return;
-  
-  // تجهيز قائمة المنتجات المتاحة في الباقة
-  const availableProducts = [];
-  bundle.productSelections.forEach(sel => {
-    const prod = products.find(p => p.id === sel.productId);
-    if (prod) {
-      // تصفية المقاسات المتاحة فقط
-      const availableSizes = {};
-      sel.sizes.forEach(size => {
-        const matrix = prod.sizeMatrix && prod.sizeMatrix[size];
-        if (matrix && matrix.qty > 0) {
-          availableSizes[size] = {
-            qty: matrix.qty,
-            price: matrix.price,
-            colors: matrix.colors || []
-          };
-        }
-      });
-      
-      if (Object.keys(availableSizes).length > 0) {
-        availableProducts.push({
-          product: prod,
-          availableSizes: availableSizes
-        });
-      }
-    }
-  });
-  
-  if (availableProducts.length === 0) {
-    showToast('عذراً، جميع منتجات هذا العرض غير متوفرة حالياً');
-    return;
-  }
-  
-  // إنشاء المودال
-  const modal = document.createElement('div');
-  modal.className = 'modal show';
-  modal.style.zIndex = '100000';
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
-      <div class="modal-header" style="position:sticky; top:0; background:var(--card-bg); z-index:2;">
-        <h3><i class="fas fa-gift" style="color:var(--accent);"></i> ${escapeHtml(bundle.title)}</h3>
-        <span class="modal-close" id="closeBundleModal">&times;</span>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:1rem; color:var(--text-soft); margin-bottom:15px;">${escapeHtml(bundle.desc)}</p>
-        
-        <div style="background:var(--accent-soft); padding:12px; border-radius:10px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <strong style="font-size:1.1rem;">عدد القطع المطلوبة: ${bundle.requiredCount}</strong>
-            <p style="font-size:0.85rem; color:var(--text-soft); margin-top:4px;">خصم ${bundle.discountPercent}% على إجمالي السعر</p>
-          </div>
-          <div style="font-size:1.3rem; font-weight:800; color:var(--danger);" id="bundleSelectedCount">0 / ${bundle.requiredCount}</div>
-        </div>
-        
-        <div id="bundleProductsContainer">
-          ${availableProducts.map((item, idx) => {
-            const p = item.product;
-            const sizesList = Object.keys(item.availableSizes);
-            
-            return `
-              <div class="bundle-product-card" data-product-idx="${idx}" style="border:1px solid var(--border-color); border-radius:12px; padding:15px; margin-bottom:15px; background:var(--card-bg);">
-                <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
-                  <img src="${escapeHtml(buildImageUrl(p.image, p.name))}" style="width:70px; height:90px; border-radius:8px; object-fit:cover;">
-                  <div>
-                    <h4 style="font-size:1rem; font-weight:700;">${escapeHtml(p.name)}</h4>
-                    <p style="font-size:0.8rem; color:var(--text-soft);">${categoryLabels[p.category] || ''}</p>
-                  </div>
-                </div>
-                
-                <div style="margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px;">اختر المقاس:</label>
-                  <div class="bundle-size-selector" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    ${sizesList.map(s => {
-                      const sizeData = item.availableSizes[s];
-                      return `
-                        <button class="size-pill bundle-size-btn" 
-                                data-idx="${idx}" 
-                                data-size="${escapeHtml(s)}" 
-                                data-price="${sizeData.price}"
-                                data-qty="${sizeData.qty}"
-                                style="min-width:50px; padding:8px 14px;">
-                          ${escapeHtml(s)}
-                        </button>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
-                
-                <div class="bundle-color-selector-wrap" style="display:none; margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px;">اختر اللون:</label>
-                  <div class="bundle-color-selector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-                </div>
-                
-                <div class="bundle-qty-wrap" style="display:none; margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:5px;">الكمية:</label>
-                  <div style="display:flex; gap:8px; align-items:center;">
-                    <button class="bundle-qty-minus" style="width:32px; height:32px; border-radius:50%; background:var(--bg-soft);">-</button>
-                    <span class="bundle-qty-value" style="font-weight:700; min-width:30px; text-align:center;">0</span>
-                    <button class="bundle-qty-plus" style="width:32px; height:32px; border-radius:50%; background:var(--bg-soft);">+</button>
-                    <span class="bundle-size-price" style="margin-right:auto; font-weight:700; color:var(--accent);"></span>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-        
-        <div style="background:var(--bg-body); padding:15px; border-radius:10px; margin-top:20px;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span>السعر الأصلي:</span>
-            <strong id="bundleOriginalPrice">0 ج.م</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--danger);">
-            <span>الخصم (${bundle.discountPercent}%):</span>
-            <strong id="bundleDiscountAmount">-0 ج.م</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:1.2rem; padding-top:10px; border-top:1px solid var(--border-color);">
-            <span>السعر النهائي:</span>
-            <strong id="bundleFinalPrice" style="color:var(--success);">0 ج.م</strong>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="position:sticky; bottom:0; background:var(--card-bg); z-index:2;">
-        <button id="addBundleToCartBtn" class="admin-btn" style="width:100%; justify-content:center; padding:14px; opacity:0.5;" disabled>
-          <i class="fas fa-shopping-bag"></i> أضف العرض للسلة
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // حالة الاختيار
-  const selections = []; // array of { productIdx, productId, size, color, qty, price }
-  
-  const modalEl = modal;
-  const countEl = modalEl.querySelector('#bundleSelectedCount');
-  const originalPriceEl = modalEl.querySelector('#bundleOriginalPrice');
-  const discountAmountEl = modalEl.querySelector('#bundleDiscountAmount');
-  const finalPriceEl = modalEl.querySelector('#bundleFinalPrice');
-  const addBtn = modalEl.querySelector('#addBundleToCartBtn');
-  
-  function updateBundleUI() {
-    const totalItems = selections.reduce((sum, s) => sum + s.qty, 0);
-    const totalOriginalPrice = selections.reduce((sum, s) => sum + (s.price * s.qty), 0);
-    const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
-    const finalPrice = totalOriginalPrice - discountAmount;
-    
-    countEl.textContent = `${totalItems} / ${bundle.requiredCount}`;
-    originalPriceEl.textContent = `${formatPrice(totalOriginalPrice)} ج.م`;
-    discountAmountEl.textContent = `-${formatPrice(discountAmount)} ج.م`;
-    finalPriceEl.textContent = `${formatPrice(finalPrice)} ج.م`;
-    
-    if (totalItems === bundle.requiredCount) {
-      addBtn.disabled = false;
-      addBtn.style.opacity = '1';
-    } else {
-      addBtn.disabled = true;
-      addBtn.style.opacity = '0.5';
-    }
-  }
-  
-  function updateProductCard(idx) {
-    const card = modalEl.querySelector(`.bundle-product-card[data-product-idx="${idx}"]`);
-    if (!card) return;
-    
-    const productSelections = selections.filter(s => s.productIdx === idx);
-    const totalQty = productSelections.reduce((sum, s) => sum + s.qty, 0);
-    
-    const qtyWrap = card.querySelector('.bundle-qty-wrap');
-    const qtyValueEl = card.querySelector('.bundle-qty-value');
-    const sizePriceEl = card.querySelector('.bundle-size-price');
-    
-    if (totalQty > 0) {
-      qtyWrap.style.display = 'block';
-      qtyValueEl.textContent = totalQty;
-      
-      const lastSel = productSelections[productSelections.length - 1];
-      if (lastSel) {
-        sizePriceEl.textContent = `${formatPrice(lastSel.price * totalQty)} ج.م`;
-      }
-    } else {
-      qtyWrap.style.display = 'none';
-    }
-  }
-  
-  // ربط أزرار المقاسات
-  modalEl.querySelectorAll('.bundle-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.idx);
-      const size = btn.dataset.size;
-      const price = parseFloat(btn.dataset.price);
-      
-      const card = modalEl.querySelector(`.bundle-product-card[data-product-idx="${idx}"]`);
-      const colorWrap = card.querySelector('.bundle-color-selector-wrap');
-      const colorSelector = card.querySelector('.bundle-color-selector');
-      
-      const item = availableProducts[idx];
-      const sizeData = item.availableSizes[size];
-      
-      // تحديد المقاس
-      card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      
-      // عرض الألوان
-      if (sizeData.colors && sizeData.colors.length > 0) {
-        colorWrap.style.display = 'block';
-        colorSelector.innerHTML = sizeData.colors.map(cName => `
-          <button class="color-swatch bundle-color-btn" 
-                  data-idx="${idx}" 
-                  data-size="${size}" 
-                  data-color="${escapeHtml(cName)}" 
-                  style="background:${colorHexMap[cName] || '#ccc'};"
-                  title="${escapeHtml(cName)}"></button>
-        `).join('');
-        
-        colorSelector.querySelectorAll('.bundle-color-btn').forEach(cb => {
-          cb.addEventListener('click', () => {
-            colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
-            cb.classList.add('selected');
-          });
-        });
-        
-        // اختيار أول لون تلقائياً
-        if (colorSelector.querySelector('.bundle-color-btn')) {
-          colorSelector.querySelector('.bundle-color-btn').classList.add('selected');
-        }
-      } else {
-        colorWrap.style.display = 'none';
-      }
-    });
-  });
-  
-  // ربط أزرار الزيادة والنقصان
-  modalEl.querySelectorAll('.bundle-product-card').forEach(card => {
-    const idx = parseInt(card.dataset.productIdx);
-    
-    const minusBtn = card.querySelector('.bundle-qty-minus');
-    const plusBtn = card.querySelector('.bundle-qty-plus');
-    
-    if (minusBtn) {
-      minusBtn.addEventListener('click', () => {
-        const productSelections = selections.filter(s => s.productIdx === idx);
-        if (productSelections.length > 0) {
-          const last = productSelections[productSelections.length - 1];
-          const selIndex = selections.indexOf(last);
-          if (last.qty > 1) {
-            last.qty -= 1;
-          } else {
-            selections.splice(selIndex, 1);
-          }
-          updateProductCard(idx);
-          updateBundleUI();
-        }
-      });
-    }
-    
-    if (plusBtn) {
-      plusBtn.addEventListener('click', () => {
-        // التحقق من اختيار المقاس
-        const selectedSizeBtn = card.querySelector('.bundle-size-btn.selected');
-        if (!selectedSizeBtn) {
-          showToast('اختر المقاس أولاً');
-          return;
-        }
-        
-        const size = selectedSizeBtn.dataset.size;
-        const price = parseFloat(selectedSizeBtn.dataset.price);
-        const maxQty = parseInt(selectedSizeBtn.dataset.qty);
-        
-        const selectedColorBtn = card.querySelector('.bundle-color-btn.selected');
-        const color = selectedColorBtn ? selectedColorBtn.dataset.color : null;
-        
-        // البحث عن اختيار مطابق
-        let existing = selections.find(s => 
-          s.productIdx === idx && s.size === size && s.color === color
-        );
-        
-        if (existing) {
-          if (existing.qty >= maxQty) {
-            showToast(`الكمية القصوى المتاحة ${maxQty}`);
-            return;
-          }
-          existing.qty += 1;
-        } else {
-          selections.push({
-            productIdx: idx,
-            productId: availableProducts[idx].product.id,
-            productName: availableProducts[idx].product.name,
-            productImage: availableProducts[idx].product.image,
-            size,
-            color,
-            qty: 1,
-            price
-          });
-        }
-        
-        updateProductCard(idx);
-        updateBundleUI();
-      });
-    }
-  });
-  
-  // إضافة الباقة للسلة
-  addBtn.addEventListener('click', () => {
-    const totalItems = selections.reduce((sum, s) => sum + s.qty, 0);
-    if (totalItems !== bundle.requiredCount) {
-      showToast(`يجب اختيار ${bundle.requiredCount} قطع بالظبط`);
-      return;
-    }
-    
-    // حساب السعر النهائي
-    const totalOriginalPrice = selections.reduce((sum, s) => sum + (s.price * s.qty), 0);
-    const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
-    const finalPrice = totalOriginalPrice - discountAmount;
-    
-    // إضافة الباقة للسلة
-    const bundleKey = 'bundle_' + bundle.id + '_' + Date.now();
-    cart.push({
-      variantKey: bundleKey,
-      type: 'bundle',
-      bundleId: bundle.id,
-      bundleTitle: bundle.title,
-      items: selections.map(s => ({
-        productId: s.productId,
-        productName: s.productName,
-        productImage: s.productImage,
-        size: s.size,
-        color: s.color,
-        qty: s.qty,
-        price: s.price
-      })),
-      originalPrice: totalOriginalPrice,
-      discountPercent: bundle.discountPercent,
-      discountAmount: discountAmount,
-      finalPrice: finalPrice,
-      quantity: 1 // الباقة واحدة
-    });
-    
-    saveCart();
-    renderCart();
-    updateCartCount();
-    modal.remove();
-    showToast('تمت إضافة العرض للسلة بنجاح');
-    playSound();
-  });
-  
-  modalEl.querySelector('#closeBundleModal').onclick = () => modal.remove();
-  modalEl.onclick = (e) => { if (e.target === modalEl) modalEl.remove(); };
-  
-  updateBundleUI();
 }
 
 // =====================================================
@@ -1927,7 +1538,7 @@ function showAdminLoginModal() {
 }
 
 // =====================================================
-// Admin — Dashboard (مع إدارة الباقات)
+// Admin — Dashboard
 // =====================================================
 function closeAdminDashboard() {
   document.querySelectorAll('.admin-panel-overlay').forEach(el => el.remove());
@@ -1953,8 +1564,7 @@ function showAdminDashboard() {
       <div class="admin-tabs">
         <button class="admin-tab-btn active" data-tab="store"><i class="fas fa-cog"></i> إعدادات المتجر</button>
         <button class="admin-tab-btn" data-tab="products"><i class="fas fa-tshirt"></i> المنتجات</button>
-        <button class="admin-tab-btn" data-tab="offers"><i class="fas fa-tags"></i> العروض</button>
-        <button class="admin-tab-btn" data-tab="bundles"><i class="fas fa-gift"></i> الباقات</button>
+        <button class="admin-tab-btn" data-tab="offers"><i class="fas fa-gift"></i> العروض</button>
         <button class="admin-tab-btn" data-tab="orders"><i class="fas fa-shopping-bag"></i> الطلبات</button>
         <button class="admin-tab-btn" data-tab="reviews"><i class="fas fa-comments"></i> التقييمات</button>
       </div>
@@ -2034,38 +1644,11 @@ function showAdminDashboard() {
         </div>
       </div>
       
-      <!-- تبويب العروض العادية -->
+      <!-- تبويب العروض (اللي هو الباقات المجمعة) -->
       <div id="tab-offers" class="admin-tab-content">
         <div class="admin-section">
-          <h3><i class="fas fa-plus-circle"></i> إضافة عرض جديد (إعلان)</h3>
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">عنوان العرض</label>
-          <input type="text" id="newOfferTitle" class="admin-input" placeholder="خصم 20%">
-          
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
-          <textarea id="newOfferDesc" class="admin-input" rows="2"></textarea>
-          
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">نص التاج (مثال: خصم 20%)</label>
-          <input type="text" id="newOfferTag" class="admin-input">
-          
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اختر المنتج</label>
-          <select id="newOfferProduct" class="admin-input"></select>
-          
-          <button id="addOfferBtn" class="admin-btn" style="width:100%;justify-content:center;">
-            <i class="fas fa-plus"></i> إضافة العرض
-          </button>
-        </div>
-        
-        <div class="admin-section">
-          <h3><i class="fas fa-list"></i> العروض الحالية</h3>
-          <div id="offersListAdmin"></div>
-        </div>
-      </div>
-
-      <!-- تبويب الباقات (Bundles) -->
-      <div id="tab-bundles" class="admin-tab-content">
-        <div class="admin-section">
-          <h3><i class="fas fa-gift"></i> إنشاء باقة (عرض كمية)</h3>
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم الباقة</label>
+          <h3><i class="fas fa-gift"></i> إنشاء عرض (باقة كمية)</h3>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">اسم العرض</label>
           <input type="text" id="bundleTitle" class="admin-input" placeholder="مثال: عرض الصيف">
           
           <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block;">الوصف</label>
@@ -2082,7 +1665,7 @@ function showAdminDashboard() {
             </div>
           </div>
           
-          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block; margin-top:10px;">المنتجات المسموحة في الباقة</label>
+          <label style="font-weight:700;font-size:0.9rem;margin-bottom:5px;display:block; margin-top:10px;">المنتجات المسموحة في العرض</label>
           <div style="background:var(--bg-soft); padding:12px; border-radius:10px; margin-bottom:15px;">
             <select id="bundleProductSelector" class="admin-input" style="margin-bottom:10px;">
               <option value="">-- اختر منتج --</option>
@@ -2091,19 +1674,19 @@ function showAdminDashboard() {
             <div id="bundleSizesSelector" style="margin-bottom:10px;"></div>
             
             <button id="bundleAddProductBtn" class="admin-btn" style="width:100%; justify-content:center;">
-              <i class="fas fa-plus"></i> إضافة المنتج للباقة
+              <i class="fas fa-plus"></i> إضافة المنتج للعرض
             </button>
           </div>
           
           <div id="bundleProductsList" style="margin-bottom:15px;"></div>
           
           <button id="createBundleBtn" class="admin-btn" style="width:100%; justify-content:center; padding:14px; background:var(--accent); color:#1a1a1a;">
-            <i class="fas fa-save"></i> حفظ الباقة
+            <i class="fas fa-save"></i> حفظ العرض
           </button>
         </div>
         
         <div class="admin-section">
-          <h3><i class="fas fa-list"></i> الباقات الحالية</h3>
+          <h3><i class="fas fa-list"></i> العروض الحالية</h3>
           <div id="bundlesListAdmin"></div>
         </div>
       </div>
@@ -2149,8 +1732,7 @@ function showAdminDashboard() {
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
       
       if (tab === 'products') renderProductsAdmin();
-      if (tab === 'offers') { renderOffersAdmin(); populateOfferProductSelect(); }
-      if (tab === 'bundles') { populateBundleProductSelector(); renderBundlesAdmin(); }
+      if (tab === 'offers') { populateBundleProductSelector(); renderBundlesAdmin(); }
       if (tab === 'orders') renderOrdersAdmin();
       if (tab === 'reviews') renderReviewsAdmin();
     });
@@ -2352,28 +1934,6 @@ function showAdminDashboard() {
     renderNewArrivals();
     showToast('✅ تم إضافة المنتج بنجاح');
   };
-  
-  overlay.querySelector('#addOfferBtn').onclick = async () => {
-    const title = overlay.querySelector('#newOfferTitle').value.trim();
-    const pid = parseInt(overlay.querySelector('#newOfferProduct').value);
-    
-    if (!title || !pid) { showToast('أدخل البيانات'); return; }
-    
-    offers.push({ id: 'off_' + Date.now(), title, productId: pid, isAvailable: true });
-    
-    const btn = overlay.querySelector('#addOfferBtn');
-    btn.disabled = true;
-    btn.innerHTML = 'جاري الحفظ...';
-    const saved = await saveStoreData();
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-plus"></i> إضافة العرض';
-    
-    if (saved) {
-      renderOffersAdmin();
-      renderOffers();
-      showToast('✅ تم إضافة العرض');
-    }
-  };
 
   // =====================================================
   // إدارة الباقات (Bundles) في الأدمن
@@ -2401,7 +1961,7 @@ function showAdminDashboard() {
       }
       
       sizesSel.innerHTML = `
-        <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:6px;">اختر المقاسات المتاحة في الباقة:</label>
+        <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:6px;">اختر المقاسات المتاحة في العرض:</label>
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
           ${Object.keys(prod.sizeMatrix).map(size => {
             const matrix = prod.sizeMatrix[size];
@@ -2418,8 +1978,8 @@ function showAdminDashboard() {
     };
   }
   
-  // إضافة منتج للباقة
-  let pendingBundleProducts = []; // المنتجات المضافة للباقة قبل الحفظ
+  // إضافة منتج للعرض
+  let pendingBundleProducts = []; // المنتجات المضافة للعرض قبل الحفظ
   
   overlay.querySelector('#bundleAddProductBtn').onclick = () => {
     const sel = overlay.querySelector('#bundleProductSelector');
@@ -2486,7 +2046,7 @@ function showAdminDashboard() {
     const requiredCount = parseInt(overlay.querySelector('#bundleRequiredCount').value);
     
     if (!title || !desc || !discount || !requiredCount) { showToast('اكمل جميع البيانات'); return; }
-    if (pendingBundleProducts.length === 0) { showToast('أضف منتجاً واحداً على الأقل للباقة'); return; }
+    if (pendingBundleProducts.length === 0) { showToast('أضف منتجاً واحداً على الأقل للعرض'); return; }
     
     const newBundle = {
       id: 'bundle_' + Date.now(),
@@ -2505,7 +2065,7 @@ function showAdminDashboard() {
     btn.innerHTML = 'جاري الحفظ...';
     const saved = await saveStoreData();
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-save"></i> حفظ الباقة';
+    btn.innerHTML = '<i class="fas fa-save"></i> حفظ العرض';
     
     if (saved) {
       // إعادة تعيين الحقول
@@ -2517,7 +2077,7 @@ function showAdminDashboard() {
       renderPendingBundleProducts();
       renderBundlesAdmin();
       renderOffers();
-      showToast('✅ تم حفظ الباقة بنجاح');
+      showToast('✅ تم حفظ العرض بنجاح');
     }
   };
   
@@ -2526,7 +2086,7 @@ function showAdminDashboard() {
     const cont = overlay.querySelector('#bundlesListAdmin');
     if (!cont) return;
     if (bundles.length === 0) {
-      cont.innerHTML = '<p style="text-align:center; color:var(--text-soft); padding:20px;">لا توجد باقات حالياً</p>';
+      cont.innerHTML = '<p style="text-align:center; color:var(--text-soft); padding:20px;">لا توجد عروض حالياً</p>';
       return;
     }
     
@@ -2558,13 +2118,13 @@ function showAdminDashboard() {
   }
   
   window.__deleteBundle = (id) => {
-    if (window.confirm('حذف هذه الباقة نهائياً؟')) {
+    if (window.confirm('حذف هذا العرض نهائياً؟')) {
       bundles = bundles.filter(b => b.id !== id);
       saveStoreData().then(saved => {
         if (saved) {
           renderBundlesAdmin();
           renderOffers();
-          showToast('✅ تم حذف الباقة');
+          showToast('✅ تم حذف العرض');
         }
       });
     }
@@ -2606,7 +2166,7 @@ function showAdminDashboard() {
       
       const saved = await saveStoreData();
       if (saved) {
-        showToast('✅ تم تعديل الباقة');
+        showToast('✅ تم تعديل العرض');
         overlay.querySelector('#bundleTitle').value = '';
         overlay.querySelector('#bundleDesc').value = '';
         overlay.querySelector('#bundleDiscount').value = '';
@@ -2615,7 +2175,7 @@ function showAdminDashboard() {
         renderPendingBundleProducts();
         renderBundlesAdmin();
         renderOffers();
-        btn.innerHTML = '<i class="fas fa-save"></i> حفظ الباقة';
+        btn.innerHTML = '<i class="fas fa-save"></i> حفظ العرض';
         btn.onclick = oldOnclick;
       }
     };
@@ -2915,41 +2475,6 @@ function showAdminDashboard() {
     };
   }
   
-  function populateOfferProductSelect() {
-    const sel = overlay.querySelector('#newOfferProduct');
-    sel.innerHTML = products.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-  }
-  
-  function renderOffersAdmin() {
-    const cont = overlay.querySelector('#offersListAdmin');
-    if (offers.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد عروض</p>'; return; }
-    
-    cont.innerHTML = offers.map(o => `
-      <div class="admin-product-row">
-        <div class="admin-product-info">
-          <strong>${escapeHtml(o.title)}</strong>
-          <span>${escapeHtml(o.tag || '')}</span>
-        </div>
-        <button class="admin-del-btn" data-del="${o.id}"><i class="fas fa-trash"></i> حذف</button>
-      </div>
-    `).join('');
-    
-    cont.querySelectorAll('[data-del]').forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.dataset.del;
-        showConfirm('حذف العرض؟', async () => {
-          offers = offers.filter(o => o.id !== id);
-          const saved = await saveStoreData();
-          if (saved) {
-            renderOffersAdmin();
-            renderOffers();
-            showToast('✅ تم الحذف');
-          }
-        });
-      };
-    });
-  }
-  
   async function renderOrdersAdmin() {
     const cont = overlay.querySelector('#ordersListAdmin');
     cont.innerHTML = '<p style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>';
@@ -3082,7 +2607,6 @@ function showAdminDashboard() {
   }
   
   renderProductsAdmin();
-  populateOfferProductSelect();
   populateBundleProductSelector();
   renderBundlesAdmin();
 }
