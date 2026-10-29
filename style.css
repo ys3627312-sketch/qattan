@@ -2498,3 +2498,63 @@ body.admin-open .whatsapp-fab {
     height: 40px;
   }
 }
+/* ============================================
+   Bundle Modal (نافذة اختيار الباقة)
+   ============================================ */
+.bundle-product-card {
+  transition: box-shadow 0.2s ease;
+}
+
+.bundle-product-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.bundle-size-btn.selected {
+  background: var(--btn-primary);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary);
+}
+
+.bundle-color-btn {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.bundle-color-btn.selected {
+  border-color: var(--text-color);
+  box-shadow: 0 0 0 2px var(--bg-body) inset;
+  transform: scale(1.1);
+}
+
+.bundle-qty-minus,
+.bundle-qty-plus {
+  transition: background 0.2s ease;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.bundle-qty-minus:hover,
+.bundle-qty-plus:hover {
+  background: var(--border-color) !important;
+}
+
+/* موبايل */
+@media (max-width: 768px) {
+  .bundle-product-card {
+    padding: 12px !important;
+  }
+  
+  .bundle-product-card img {
+    width: 55px !important;
+    height: 70px !important;
+  }
+  
+  .bundle-size-btn {
+    padding: 6px 10px !important;
+    font-size: 0.8rem !important;
+    min-width: 44px !important;
+  }
+}
