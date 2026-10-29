@@ -2818,7 +2818,7 @@ async function init() {
 }
 
 // =====================================================
-// صفحة تفاصيل الباقة (بديل لـ openBundleModal)
+// صفحة تفاصيل الباقة (مع الاختيار المباشر والعداد)
 // =====================================================
 function showBundleDetails(bundleId) {
   const bundle = bundles.find(b => b.id === bundleId);
@@ -2858,7 +2858,8 @@ function showBundleDetails(bundleId) {
     return;
   }
   
-  // بناء الـ Modal
+  let selectedItems = []; // { productIdx, productId, productName, productImage, size, color, price }
+  
   const modal = document.createElement('div');
   modal.className = 'modal show';
   modal.style.zIndex = '100000';
@@ -2878,6 +2879,9 @@ function showBundleDetails(bundleId) {
           </div>
           <div style="font-size:1.3rem; font-weight:800; color:var(--danger);" id="bundleSelectedCount">0 / ${bundle.requiredCount}</div>
         </div>
+        
+        <!-- قائمة المنتجات المختارة -->
+        <div id="selectedBundleItemsWrap" style="margin-bottom:15px;"></div>
         
         <div id="bundleProductsContainer">
           ${availableProducts.map((item, idx) => {
@@ -2917,15 +2921,12 @@ function showBundleDetails(bundleId) {
                   <div class="bundle-color-selector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
                 </div>
                 
-                <div class="bundle-qty-wrap" style="display:none; margin-bottom:10px;">
-                  <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:5px;">الكمية:</label>
-                  <div style="display:flex; gap:8px; align-items:center;">
-                    <button class="bundle-qty-minus" style="width:32px; height:32px; border-radius:50%; background:var(--bg-soft);">-</button>
-                    <span class="bundle-qty-value" style="font-weight:700; min-width:30px; text-align:center;">0</span>
-                    <button class="bundle-qty-plus" style="width:32px; height:32px; border-radius:50%; background:var(--bg-soft);">+</button>
-                    <span class="bundle-size-price" style="margin-right:auto; font-weight:700; color:var(--accent);"></span>
-                  </div>
+                <div style="margin-top:10px; text-align:right;">
+                   <button class="add-selected-item-btn" data-idx="${idx}" style="padding: 8px 20px; border-radius:20px; background:var(--accent); color:#1a1a1a; font-weight:700; cursor:pointer; font-size:0.9rem;">
+                     <i class="fas fa-plus"></i> أضف هذا المنتج
+                   </button>
                 </div>
+
               </div>
             `;
           }).join('')}
@@ -2956,25 +2957,28 @@ function showBundleDetails(bundleId) {
   
   document.body.appendChild(modal);
   
-  const selections = [];
   const modalEl = modal;
   const countEl = modalEl.querySelector('#bundleSelectedCount');
   const originalPriceEl = modalEl.querySelector('#bundleOriginalPrice');
   const discountAmountEl = modalEl.querySelector('#bundleDiscountAmount');
   const finalPriceEl = modalEl.querySelector('#bundleFinalPrice');
   const addBtn = modalEl.querySelector('#addBundleToCartBtn');
+  const selectedItemsWrap = modalEl.querySelector('#selectedBundleItemsWrap');
   
-  function updateBundleUI() {
-    const totalItems = selections.reduce((sum, s) => sum + s.qty, 0);
-    const totalOriginalPrice = selections.reduce((sum, s) => sum + (s.price * s.qty), 0);
+  // دالة لتحديث الواجهة بأكملها
+  function updateUI() {
+    const totalItems = selectedItems.length;
+    const totalOriginalPrice = selectedItems.reduce((sum, s) => sum + s.price, 0);
     const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
     const finalPrice = totalOriginalPrice - discountAmount;
     
+    // تحديث العداد والأسعار
     countEl.textContent = `${totalItems} / ${bundle.requiredCount}`;
     originalPriceEl.textContent = `${formatPrice(totalOriginalPrice)} ج.م`;
     discountAmountEl.textContent = `-${formatPrice(discountAmount)} ج.م`;
     finalPriceEl.textContent = `${formatPrice(finalPrice)} ج.م`;
     
+    // تفعيل زرار الإضافة
     if (totalItems === bundle.requiredCount) {
       addBtn.disabled = false;
       addBtn.style.opacity = '1';
@@ -2982,147 +2986,128 @@ function showBundleDetails(bundleId) {
       addBtn.disabled = true;
       addBtn.style.opacity = '0.5';
     }
-  }
-  
-  function updateProductCard(idx) {
-    const card = modalEl.querySelector(`.bundle-product-card[data-product-idx="${idx}"]`);
-    if (!card) return;
     
-    const productSelections = selections.filter(s => s.productIdx === idx);
-    const totalQty = productSelections.reduce((sum, s) => sum + s.qty, 0);
-    
-    const qtyWrap = card.querySelector('.bundle-qty-wrap');
-    const qtyValueEl = card.querySelector('.bundle-qty-value');
-    const sizePriceEl = card.querySelector('.bundle-size-price');
-    
-    if (totalQty > 0) {
-      qtyWrap.style.display = 'block';
-      qtyValueEl.textContent = totalQty;
-      
-      const lastSel = productSelections[productSelections.length - 1];
-      if (lastSel) {
-        sizePriceEl.textContent = `${formatPrice(lastSel.price * totalQty)} ج.م`;
-      }
+    // رسم قائمة المنتجات المختارة
+    if (selectedItems.length > 0) {
+      selectedItemsWrap.innerHTML = `
+        <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px; color:var(--accent);">المنتجات التي اخترتها:</label>
+        ${selectedItems.map((item, i) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; margin-bottom:6px;">
+            <div style="font-size:0.85rem;">
+              <strong>${escapeHtml(item.productName)}</strong>
+              <span style="color:var(--text-soft);"> - مقاس: ${escapeHtml(item.size)} ${item.color ? '• لون: ' + escapeHtml(item.color) : ''}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <strong style="font-size:0.85rem;">${formatPrice(item.price)} ج.م</strong>
+              <button onclick="window.__removeBundleItem(${i})" style="background:#ffe0e0; color:var(--danger); border:none; padding:4px 8px; border-radius:50%; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+        `).join('')}
+      `;
     } else {
-      qtyWrap.style.display = 'none';
+      selectedItemsWrap.innerHTML = '';
     }
   }
+
+  // إتاحة الحذف من الـ window عشان الزرار يشتغل
+  window.__removeBundleItem = (idx) => {
+    selectedItems.splice(idx, 1);
+    updateUI();
+  };
   
-  modalEl.querySelectorAll('.bundle-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.idx);
-      const size = btn.dataset.size;
-      
-      const card = modalEl.querySelector(`.bundle-product-card[data-product-idx="${idx}"]`);
-      const colorWrap = card.querySelector('.bundle-color-selector-wrap');
-      const colorSelector = card.querySelector('.bundle-color-selector');
-      
-      const item = availableProducts[idx];
-      const sizeData = item.availableSizes[size];
-      
-      card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      
-      if (sizeData.colors && sizeData.colors.length > 0) {
-        colorWrap.style.display = 'block';
-        colorSelector.innerHTML = sizeData.colors.map(cName => `
-          <button class="color-swatch bundle-color-btn" 
-                  data-idx="${idx}" 
-                  data-size="${size}" 
-                  data-color="${escapeHtml(cName)}" 
-                  style="background:${colorHexMap[cName] || '#ccc'};"
-                  title="${escapeHtml(cName)}"></button>
-        `).join('');
+  // ربط أزرار المقاسات والألوان
+  modalEl.querySelectorAll('.bundle-product-card').forEach(card => {
+    const idx = parseInt(card.dataset.productIdx);
+    const colorWrap = card.querySelector('.bundle-color-selector-wrap');
+    const colorSelector = card.querySelector('.bundle-color-selector');
+    
+    // اختيار المقاس
+    card.querySelectorAll('.bundle-size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = btn.dataset.size;
+        const item = availableProducts[idx];
+        const sizeData = item.availableSizes[size];
         
-        colorSelector.querySelectorAll('.bundle-color-btn').forEach(cb => {
-          cb.addEventListener('click', () => {
-            colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
-            cb.classList.add('selected');
+        // تحديد الزرار
+        card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        
+        // عرض الألوان
+        if (sizeData.colors && sizeData.colors.length > 0) {
+          colorWrap.style.display = 'block';
+          colorSelector.innerHTML = sizeData.colors.map(cName => `
+            <button class="color-swatch bundle-color-btn" 
+                    data-color="${escapeHtml(cName)}" 
+                    style="background:${colorHexMap[cName] || '#ccc'};"
+                    title="${escapeHtml(cName)}"></button>
+          `).join('');
+          
+          colorSelector.querySelectorAll('.bundle-color-btn').forEach(cb => {
+            cb.addEventListener('click', () => {
+              colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
+              cb.classList.add('selected');
+            });
           });
-        });
-        
-        if (colorSelector.querySelector('.bundle-color-btn')) {
-          colorSelector.querySelector('.bundle-color-btn').classList.add('selected');
+          
+          if (colorSelector.querySelector('.bundle-color-btn')) {
+            colorSelector.querySelector('.bundle-color-btn').classList.add('selected');
+          }
+        } else {
+          colorWrap.style.display = 'none';
         }
-      } else {
-        colorWrap.style.display = 'none';
+      });
+    });
+    
+    // زرار إضافة المنتج المختار
+    card.querySelector('.add-selected-item-btn').addEventListener('click', () => {
+      const selectedSizeBtn = card.querySelector('.bundle-size-btn.selected');
+      if (!selectedSizeBtn) {
+        showToast('الرجاء اختيار المقاس أولاً');
+        return;
       }
+      
+      const size = selectedSizeBtn.dataset.size;
+      const price = parseFloat(selectedSizeBtn.dataset.price);
+      const maxQty = parseInt(selectedSizeBtn.dataset.qty);
+      const selectedColorBtn = card.querySelector('.bundle-color-btn.selected');
+      const color = selectedColorBtn ? selectedColorBtn.dataset.color : null;
+      
+      if (selectedItems.length >= bundle.requiredCount) {
+        showToast(`لقد وصلت للحد الأقصى (${bundle.requiredCount}) قطع. يمكنك إزالة منتج وإضافة آخر.`);
+        return;
+      }
+      
+      // التحقق من المخزون
+      const countInBundle = selectedItems.filter(s => s.productId === availableProducts[idx].product.id && s.size === size).length;
+      if (countInBundle >= maxQty) {
+        showToast(`الكمية القصوى المتاحة لهذا المقاس ${maxQty}`);
+        return;
+      }
+      
+      // إضافة العنصر
+      selectedItems.push({
+        productIdx: idx,
+        productId: availableProducts[idx].product.id,
+        productName: availableProducts[idx].product.name,
+        productImage: availableProducts[idx].product.image,
+        size,
+        color,
+        price
+      });
+      
+      updateUI();
+      showToast('تمت إضافة المنتج');
     });
   });
   
-  modalEl.querySelectorAll('.bundle-product-card').forEach(card => {
-    const idx = parseInt(card.dataset.productIdx);
-    const minusBtn = card.querySelector('.bundle-qty-minus');
-    const plusBtn = card.querySelector('.bundle-qty-plus');
-    
-    if (minusBtn) {
-      minusBtn.addEventListener('click', () => {
-        const productSelections = selections.filter(s => s.productIdx === idx);
-        if (productSelections.length > 0) {
-          const last = productSelections[productSelections.length - 1];
-          const selIndex = selections.indexOf(last);
-          if (last.qty > 1) {
-            last.qty -= 1;
-          } else {
-            selections.splice(selIndex, 1);
-          }
-          updateProductCard(idx);
-          updateBundleUI();
-        }
-      });
-    }
-    
-    if (plusBtn) {
-      plusBtn.addEventListener('click', () => {
-        const selectedSizeBtn = card.querySelector('.bundle-size-btn.selected');
-        if (!selectedSizeBtn) {
-          showToast('اختر المقاس أولاً');
-          return;
-        }
-        
-        const size = selectedSizeBtn.dataset.size;
-        const price = parseFloat(selectedSizeBtn.dataset.price);
-        const maxQty = parseInt(selectedSizeBtn.dataset.qty);
-        const selectedColorBtn = card.querySelector('.bundle-color-btn.selected');
-        const color = selectedColorBtn ? selectedColorBtn.dataset.color : null;
-        
-        let existing = selections.find(s => 
-          s.productIdx === idx && s.size === size && s.color === color
-        );
-        
-        if (existing) {
-          if (existing.qty >= maxQty) {
-            showToast(`الكمية القصوى المتاحة ${maxQty}`);
-            return;
-          }
-          existing.qty += 1;
-        } else {
-          selections.push({
-            productIdx: idx,
-            productId: availableProducts[idx].product.id,
-            productName: availableProducts[idx].product.name,
-            productImage: availableProducts[idx].product.image,
-            size,
-            color,
-            qty: 1,
-            price
-          });
-        }
-        
-        updateProductCard(idx);
-        updateBundleUI();
-      });
-    }
-  });
-  
+  // إضافة للسلة
   addBtn.addEventListener('click', () => {
-    const totalItems = selections.reduce((sum, s) => sum + s.qty, 0);
-    if (totalItems !== bundle.requiredCount) {
+    if (selectedItems.length !== bundle.requiredCount) {
       showToast(`يجب اختيار ${bundle.requiredCount} قطع بالظبط`);
       return;
     }
     
-    const totalOriginalPrice = selections.reduce((sum, s) => sum + (s.price * s.qty), 0);
+    const totalOriginalPrice = selectedItems.reduce((sum, s) => sum + s.price, 0);
     const discountAmount = totalOriginalPrice * (bundle.discountPercent / 100);
     const finalPrice = totalOriginalPrice - discountAmount;
     
@@ -3132,13 +3117,13 @@ function showBundleDetails(bundleId) {
       type: 'bundle',
       bundleId: bundle.id,
       bundleTitle: bundle.title,
-      items: selections.map(s => ({
+      items: selectedItems.map(s => ({
         productId: s.productId,
         productName: s.productName,
         productImage: s.productImage,
         size: s.size,
         color: s.color,
-        qty: s.qty,
+        qty: 1,
         price: s.price
       })),
       originalPrice: totalOriginalPrice,
@@ -3159,7 +3144,7 @@ function showBundleDetails(bundleId) {
   modalEl.querySelector('#closeBundleModal').onclick = () => modal.remove();
   modalEl.onclick = (e) => { if (e.target === modalEl) modalEl.remove(); };
   
-  updateBundleUI();
+  updateUI();
 }
 
 init();
