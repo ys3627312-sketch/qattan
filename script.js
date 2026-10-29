@@ -2818,7 +2818,7 @@ async function init() {
 }
 
 // =====================================================
-// صفحة تفاصيل الباقة (مع الاختيار المباشر والعداد)
+// صفحة تفاصيل الباقة (مع الإضافة التلقائية)
 // =====================================================
 function showBundleDetails(bundleId) {
   const bundle = bundles.find(b => b.id === bundleId);
@@ -2908,6 +2908,7 @@ function showBundleDetails(bundleId) {
                                 data-size="${escapeHtml(s)}" 
                                 data-price="${sizeData.price}"
                                 data-qty="${sizeData.qty}"
+                                data-has-colors="${sizeData.colors && sizeData.colors.length > 0 ? 'true' : 'false'}"
                                 style="min-width:50px; padding:8px 14px;">
                           ${escapeHtml(s)}
                         </button>
@@ -2919,12 +2920,6 @@ function showBundleDetails(bundleId) {
                 <div class="bundle-color-selector-wrap" style="display:none; margin-bottom:10px;">
                   <label style="font-weight:700; font-size:0.9rem; display:block; margin-bottom:8px;">اختر اللون:</label>
                   <div class="bundle-color-selector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-                </div>
-                
-                <div style="margin-top:10px; text-align:right;">
-                   <button class="add-selected-item-btn" data-idx="${idx}" style="padding: 8px 20px; border-radius:20px; background:var(--accent); color:#1a1a1a; font-weight:700; cursor:pointer; font-size:0.9rem;">
-                     <i class="fas fa-plus"></i> أضف هذا المنتج
-                   </button>
                 </div>
 
               </div>
@@ -3015,6 +3010,37 @@ function showBundleDetails(bundleId) {
     updateUI();
   };
   
+  // دالة مساعدة لإضافة المنتج للسلة
+  function tryAddProductToBundle(idx, size, color) {
+    if (selectedItems.length >= bundle.requiredCount) {
+      showToast(`لقد وصلت للحد الأقصى (${bundle.requiredCount}) قطع. يمكنك إزالة منتج وإضافة آخر.`);
+      return;
+    }
+    
+    const sizeData = availableProducts[idx].availableSizes[size];
+    const maxQty = sizeData.qty;
+    
+    // التحقق من المخزون
+    const countInBundle = selectedItems.filter(s => s.productId === availableProducts[idx].product.id && s.size === size).length;
+    if (countInBundle >= maxQty) {
+      showToast(`الكمية القصوى المتاحة لهذا المقاس ${maxQty}`);
+      return;
+    }
+    
+    selectedItems.push({
+      productIdx: idx,
+      productId: availableProducts[idx].product.id,
+      productName: availableProducts[idx].product.name,
+      productImage: availableProducts[idx].product.image,
+      size,
+      color,
+      price: sizeData.price
+    });
+    
+    updateUI();
+    showToast('تمت إضافة المنتج');
+  }
+  
   // ربط أزرار المقاسات والألوان
   modalEl.querySelectorAll('.bundle-product-card').forEach(card => {
     const idx = parseInt(card.dataset.productIdx);
@@ -3027,13 +3053,14 @@ function showBundleDetails(bundleId) {
         const size = btn.dataset.size;
         const item = availableProducts[idx];
         const sizeData = item.availableSizes[size];
+        const hasColors = btn.dataset.hasColors === 'true';
         
         // تحديد الزرار
         card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         
-        // عرض الألوان
-        if (sizeData.colors && sizeData.colors.length > 0) {
+        // عرض الألوان لو موجودة
+        if (hasColors) {
           colorWrap.style.display = 'block';
           colorSelector.innerHTML = sizeData.colors.map(cName => `
             <button class="color-swatch bundle-color-btn" 
@@ -3044,59 +3071,32 @@ function showBundleDetails(bundleId) {
           
           colorSelector.querySelectorAll('.bundle-color-btn').forEach(cb => {
             cb.addEventListener('click', () => {
+              const color = cb.dataset.color;
+              // تحديد اللون (بصرياً) وبعدها يتضاف على طول
               colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
               cb.classList.add('selected');
+              
+              tryAddProductToBundle(idx, size, color);
+              
+              // إزالة التحديد عشان يختار منتج تاني
+              setTimeout(() => {
+                card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
+                colorSelector.querySelectorAll('.bundle-color-btn').forEach(b => b.classList.remove('selected'));
+                colorWrap.style.display = 'none';
+              }, 300);
             });
           });
-          
-          if (colorSelector.querySelector('.bundle-color-btn')) {
-            colorSelector.querySelector('.bundle-color-btn').classList.add('selected');
-          }
         } else {
+          // لو مفيش ألوان، يتضاف فوراً بمجرد اختيار المقاس
           colorWrap.style.display = 'none';
+          tryAddProductToBundle(idx, size, null);
+          
+          // إزالة التحديد
+          setTimeout(() => {
+            card.querySelectorAll('.bundle-size-btn').forEach(b => b.classList.remove('selected'));
+          }, 300);
         }
       });
-    });
-    
-    // زرار إضافة المنتج المختار
-    card.querySelector('.add-selected-item-btn').addEventListener('click', () => {
-      const selectedSizeBtn = card.querySelector('.bundle-size-btn.selected');
-      if (!selectedSizeBtn) {
-        showToast('الرجاء اختيار المقاس أولاً');
-        return;
-      }
-      
-      const size = selectedSizeBtn.dataset.size;
-      const price = parseFloat(selectedSizeBtn.dataset.price);
-      const maxQty = parseInt(selectedSizeBtn.dataset.qty);
-      const selectedColorBtn = card.querySelector('.bundle-color-btn.selected');
-      const color = selectedColorBtn ? selectedColorBtn.dataset.color : null;
-      
-      if (selectedItems.length >= bundle.requiredCount) {
-        showToast(`لقد وصلت للحد الأقصى (${bundle.requiredCount}) قطع. يمكنك إزالة منتج وإضافة آخر.`);
-        return;
-      }
-      
-      // التحقق من المخزون
-      const countInBundle = selectedItems.filter(s => s.productId === availableProducts[idx].product.id && s.size === size).length;
-      if (countInBundle >= maxQty) {
-        showToast(`الكمية القصوى المتاحة لهذا المقاس ${maxQty}`);
-        return;
-      }
-      
-      // إضافة العنصر
-      selectedItems.push({
-        productIdx: idx,
-        productId: availableProducts[idx].product.id,
-        productName: availableProducts[idx].product.name,
-        productImage: availableProducts[idx].product.image,
-        size,
-        color,
-        price
-      });
-      
-      updateUI();
-      showToast('تمت إضافة المنتج');
     });
   });
   
