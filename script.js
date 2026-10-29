@@ -2993,68 +2993,6 @@ async function init() {
     document.body.style.visibility = 'visible';
   }, 400);
 }
-function initTryOn() {
-  const container = document.getElementById('mannequinCanvas');
-  if (!container) return;
-  if (threeRenderer) return;
-
-  threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color(0x1a1a1a);
-
-  threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-  threeCamera.position.set(0, 1.2, 3);
-
-  threeRenderer = new THREE.WebGLRenderer({ antialias: true });
-  threeRenderer.setSize(container.clientWidth, container.clientHeight);
-  threeRenderer.shadowMap.enabled = true;
-  container.appendChild(threeRenderer.domElement);
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-  threeScene.add(ambientLight);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(2, 4, 2);
-  dirLight.castShadow = true;
-  threeScene.add(dirLight);
-
-  threeControls = new OrbitControls(threeCamera, threeRenderer.domElement);
-  threeControls.enableDamping = true;
-  threeControls.minDistance = 1.5;
-  threeControls.maxDistance = 5;
-  threeControls.target.set(0, 1, 0);
-
-  const loader = new GLTFLoader();
-  loader.load('assets/abstract-white-man-abstract_man_standing-v2.glb', (gltf) => {
-    mannequinModel = gltf.scene;
-    const box = new THREE.Box3().setFromObject(mannequinModel);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-    mannequinModel.position.x = -center.x;
-    mannequinModel.position.y = -box.min.y;
-    mannequinModel.position.z = -center.z;
-    const scale = 1.8 / size.y;
-    mannequinModel.scale.set(scale, scale, scale);
-    threeScene.add(mannequinModel);
-    threeControls.target.set(0, 0.9, 0);
-    threeCamera.position.set(0, 1.2, 3);
-    threeControls.update();
-  });
-
-  function animate() {
-    requestAnimationFrame(animate);
-    threeControls.update();
-    threeRenderer.render(threeScene, threeCamera);
-  }
-  animate();
-
-  window.addEventListener('resize', () => {
-    if (!threeRenderer || !container) return;
-    threeCamera.aspect = container.clientWidth / container.clientHeight;
-    threeCamera.updateProjectionMatrix();
-    threeRenderer.setSize(container.clientWidth, container.clientHeight);
-  });
-
-  populateTryOnSelectors();
-}
 
 function populateTryOnSelectors() {
   const tshirtSelector = document.getElementById('tryOnTshirtSelector');
