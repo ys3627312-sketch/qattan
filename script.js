@@ -471,7 +471,7 @@ function renderOffers() {
     
     return `
       <div class="offer-card" style="background: linear-gradient(135deg, #fff8e1, #fdf2d0); border: 2px solid #f1c40f;">
-        <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;">🔥 خصم ${b.discountPercent}%</span>
+        <span class="offer-tag" style="background:#e74c3c; color:#fff; font-size:0.9rem;"> خصم ${b.discountPercent}%</span>
         <h3 class="offer-title" style="color:#b7330f;">${escapeHtml(b.title)}</h3>
         <p class="offer-desc" style="color:#7f5a1f; font-weight:600;">${escapeHtml(b.desc)}</p>
         <p style="font-size:0.9rem; color:#5a3d0c; margin-bottom:10px;">اطلب <strong>${b.requiredCount}</strong> قطعة بسعر مميز!</p>
@@ -1050,29 +1050,42 @@ function renderCart() {
   container.innerHTML = cart.map(item => {
     if (item.type === 'bundle') {
       return `
-        <div class="cart-item" style="background:linear-gradient(135deg,#fff8e1,#fdf2d0); border:1px solid #f1c40f; border-radius:12px; padding:10px; margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+        <div class="cart-item bundle-cart-item" style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:16px; padding:16px; margin-bottom:14px; position:relative; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+          
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:14px; padding-bottom:12px; border-bottom:1px dashed var(--border-color);">
             <div>
-              <strong style="color:#b7330f; font-size:1rem;">🔥 ${escapeHtml(item.bundleTitle)}</strong>
-              <p style="font-size:0.75rem; color:#7f5a1f; margin-top:4px;">خصم ${item.discountPercent}%</p>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <i class="fas fa-gift" style="color:var(--accent); font-size:1rem;"></i>
+                <strong style="color:var(--text-color); font-size:1rem;">${escapeHtml(item.bundleTitle)}</strong>
+              </div>
+              <span style="font-size:0.75rem; color:var(--danger); font-weight:700; background:rgba(231,76,60,0.08); padding:2px 8px; border-radius:20px;">
+                خصم ${item.discountPercent}%
+              </span>
             </div>
-            <button class="cart-remove" data-remove="${escapeHtml(item.variantKey)}"><i class="fas fa-times"></i></button>
+            <button class="cart-remove" data-remove="${escapeHtml(item.variantKey)}" style="color:var(--text-soft); font-size:0.9rem; background:none; border:none; cursor:pointer;">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div style="margin-bottom:8px;">
+          
+          <div style="margin-bottom:14px;">
             ${item.items.map(subItem => `
-              <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(0,0,0,0.05);">
-                <img src="${escapeHtml(buildImageUrl(subItem.productImage, subItem.productName))}" style="width:35px; height:45px; border-radius:6px; object-fit:cover;">
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--bg-soft);">
+                <img src="${escapeHtml(buildImageUrl(subItem.productImage, subItem.productName))}" style="width:42px; height:52px; border-radius:8px; object-fit:cover; flex-shrink:0;">
                 <div style="flex:1;">
-                  <div style="font-size:0.85rem; font-weight:600;">${escapeHtml(subItem.productName)}</div>
-                  <div style="font-size:0.7rem; color:#7f5a1f;">مقاس: ${escapeHtml(subItem.size)}${subItem.color ? ' • لون: ' + escapeHtml(subItem.color) : ''} • عدد: ${subItem.qty}</div>
+                  <div style="font-size:0.88rem; font-weight:700; color:var(--text-color); margin-bottom:2px;">${escapeHtml(subItem.productName)}</div>
+                  <div style="font-size:0.72rem; color:var(--text-soft);">
+                    ${subItem.size ? `مقاس: ${escapeHtml(subItem.size)}` : ''}
+                    ${subItem.color ? ` • لون: ${escapeHtml(subItem.color)}` : ''}
+                  </div>
                 </div>
-                <div style="font-size:0.8rem; font-weight:700;">${formatPrice(subItem.price * subItem.qty)} ج.م</div>
+                <div style="font-size:0.85rem; font-weight:700; color:var(--text-color);">${formatPrice(subItem.price)} ج.م</div>
               </div>
             `).join('')}
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid rgba(0,0,0,0.1);">
-            <div style="font-size:0.8rem; text-decoration:line-through; color:#999;">${formatPrice(item.originalPrice)} ج.م</div>
-            <div style="font-weight:800; color:#27ae60; font-size:1rem;">${formatPrice(item.finalPrice)} ج.م</div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px;">
+            <div style="font-size:0.85rem; color:var(--text-soft); text-decoration:line-through;">${formatPrice(item.originalPrice)} ج.م</div>
+            <div style="font-weight:800; color:var(--success); font-size:1.1rem;">${formatPrice(item.finalPrice)} ج.م</div>
           </div>
         </div>
       `;
@@ -1238,7 +1251,7 @@ async function sendOrder() {
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
   cart.forEach(c => {
     if (c.type === 'bundle') {
-      msg += `🔥 [عرض] ${c.bundleTitle}\n`;
+      msg += ` [عرض] ${c.bundleTitle}\n`;
       c.items.forEach(item => {
         msg += `   • ${item.productName} (${item.size}) ×${item.qty}\n`;
       });
