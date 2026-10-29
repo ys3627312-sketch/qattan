@@ -941,6 +941,20 @@ async function renderProductDetails(id) {
     
     const reviewId = await saveReviewToFirebase(p.id, reviewData);
     if (reviewId) {
+      // ✨ تحديث متوسط التقييم وعدد التقييمات في المنتج
+      const allReviews = await loadReviewsForProduct(p.id);
+      const totalRatings = allReviews.length;
+      const avgRating = totalRatings > 0 
+        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
+        : 0;
+      
+      const prodIdx = products.findIndex(x => x.id === p.id);
+      if (prodIdx !== -1) {
+        products[prodIdx].avgRating = avgRating;
+        products[prodIdx].totalRatings = totalRatings;
+        await saveStoreData();
+      }
+      
       showToast('شكراً لتقييمك!');
       playSound();
       renderProductDetails(p.id);
@@ -2904,27 +2918,35 @@ function showAdminDashboard() {
         const productName = prod ? prod.name : 'منتج محذوف';
         
         const repliesHtml = (r.replies && r.replies.length > 0) ? r.replies.map(reply => `
-          <div class="reply-item store-reply" style="margin-bottom:8px;">
-            <strong style="font-size:0.8rem; display:block; margin-bottom:3px;">المتجر (إدارة):</strong>
-            <span style="font-size:0.9rem;">${escapeHtml(reply.text)}</span>
+          <div style="margin-top:12px; padding:12px; background:linear-gradient(135deg, var(--accent-soft), var(--bg-soft)); border-right:4px solid var(--accent); border-radius:10px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+              <i class="fas fa-store" style="color:var(--accent); font-size:0.85rem;"></i>
+              <strong style="font-size:0.85rem; color:var(--text-color);">رد المتجر:</strong>
+              <span style="font-size:0.7rem; color:var(--text-soft); margin-right:auto;">${new Date(reply.date).toLocaleDateString('ar-EG')}</span>
+            </div>
+            <p style="font-size:0.9rem; margin:0; color:var(--text-color); line-height:1.6;">${escapeHtml(reply.text)}</p>
           </div>
         `).join('') : '';
         
         return `
-          <div class="admin-review-card">
+          <div class="admin-review-card" style="padding:16px; border-radius:12px; background:var(--card-bg); border:1px solid var(--border-color); margin-bottom:16px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
               <strong style="color:var(--accent);">${escapeHtml(productName)}</strong>
               <span style="font-size:0.75rem; opacity:0.6;">${new Date(r.date || toDate(r.createdAt)).toLocaleDateString('ar-EG')}</span>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-              <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(r.userName)}</span>
-              <div class="stars">${renderStars(r.rating)}</div>
+            
+            <div style="background:var(--bg-soft); padding:12px; border-radius:10px; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <i class="fas fa-user-circle" style="color:var(--text-soft);"></i>
+                <span style="font-weight:700; font-size:0.9rem;">${escapeHtml(r.userName)}</span>
+                <div class="stars">${renderStars(r.rating)}</div>
+              </div>
+              ${r.comment ? `<p style="font-size:0.9rem; margin:0; color:var(--text-soft);">${escapeHtml(r.comment)}</p>` : ''}
             </div>
-            ${r.comment ? `<p style="font-size:0.9rem; margin-bottom:10px; color:var(--text-soft);">${escapeHtml(r.comment)}</p>` : ''}
             
             ${repliesHtml}
             
-            <div class="admin-reply-box">
+            <div class="admin-reply-box" style="margin-top:10px;">
               <input type="text" placeholder="اكتب ردك هنا..." class="admin-reply-input" data-rid="${r.firestoreId}">
               <button class="admin-reply-btn" data-rid="${r.firestoreId}">رد</button>
             </div>
