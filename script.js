@@ -436,9 +436,25 @@ function renderProductCard(p) {
   `;
 }
 
-function renderProducts() {
+async function renderProducts() {
   const container = document.getElementById('itemsContainer');
   if (!container) return;
+  
+  // ✨ جلب التقييمات وتحديث الذاكرة (مش storeData)
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const allReviews = snap.docs.map(d => d.data());
+    
+    products.forEach(p => {
+      const productReviews = allReviews.filter(r => r.productId === p.id);
+      p.totalRatings = productReviews.length;
+      p.avgRating = productReviews.length > 0 
+        ? productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length 
+        : 0;
+    });
+  } catch(e) {
+    console.error('Error loading reviews for cards:', e);
+  }
   
   const filtered = getFilteredProducts();
   
@@ -462,9 +478,24 @@ function renderProducts() {
   bindProductEvents(container);
 }
 
-function renderFeatured() {
+async function renderFeatured() {
   const container = document.getElementById('newArrivalsContainer');
   if (!container) return;
+  
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const allReviews = snap.docs.map(d => d.data());
+    
+    products.forEach(p => {
+      const productReviews = allReviews.filter(r => r.productId === p.id);
+      p.totalRatings = productReviews.length;
+      p.avgRating = productReviews.length > 0 
+        ? productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length 
+        : 0;
+    });
+  } catch(e) {
+    console.error('Error loading reviews for featured:', e);
+  }
   
   const featured = products.filter(p => p.isNew).slice(0, 4);
   
@@ -477,9 +508,24 @@ function renderFeatured() {
   bindProductEvents(container);
 }
 
-function renderNewArrivals() {
+async function renderNewArrivals() {
   const container = document.getElementById('newItemsContainer');
   if (!container) return;
+  
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const allReviews = snap.docs.map(d => d.data());
+    
+    products.forEach(p => {
+      const productReviews = allReviews.filter(r => r.productId === p.id);
+      p.totalRatings = productReviews.length;
+      p.avgRating = productReviews.length > 0 
+        ? productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length 
+        : 0;
+    });
+  } catch(e) {
+    console.error('Error loading reviews for new arrivals:', e);
+  }
   
   const newOnes = products.filter(p => p.isNew);
   
@@ -538,9 +584,24 @@ function renderOffers() {
   });
 }
 
-function renderFavorites() {
+async function renderFavorites() {
   const container = document.getElementById('favoritesContainer');
   if (!container) return;
+  
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const allReviews = snap.docs.map(d => d.data());
+    
+    products.forEach(p => {
+      const productReviews = allReviews.filter(r => r.productId === p.id);
+      p.totalRatings = productReviews.length;
+      p.avgRating = productReviews.length > 0 
+        ? productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length 
+        : 0;
+    });
+  } catch(e) {
+    console.error('Error loading reviews for favorites:', e);
+  }
   
   const favs = products.filter(p => favorites.includes(p.id));
   
