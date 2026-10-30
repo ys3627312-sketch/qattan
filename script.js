@@ -706,11 +706,13 @@ async function renderProductDetails(id) {
         let repliesHtml = '';
         if (r.replies && r.replies.length > 0) {
           repliesHtml = r.replies.map(reply => `
-            <div class="reply-item store-reply">
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <strong><span class="store-badge">إدارة المتجر</span> ${escapeHtml(reply.userName || 'المتجر')}</strong>
+            <div style="margin-top:12px; padding:12px; background:linear-gradient(135deg, var(--accent-soft), var(--bg-soft)); border-right:4px solid var(--accent); border-radius:10px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <i class="fas fa-store" style="color:var(--accent); font-size:0.85rem;"></i>
+                <strong style="font-size:0.85rem; color:var(--text-color);">رد المتجر:</strong>
+                <span style="font-size:0.7rem; color:var(--text-soft); margin-right:auto;">${new Date(reply.date).toLocaleDateString('ar-EG')}</span>
               </div>
-              <p style="font-size:0.9rem; margin:0;">${escapeHtml(reply.text)}</p>
+              <p style="font-size:0.9rem; margin:0; color:var(--text-color); line-height:1.6;">${escapeHtml(reply.text)}</p>
             </div>
           `).join('');
         }
