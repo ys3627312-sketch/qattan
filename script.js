@@ -693,9 +693,15 @@ async function renderProductDetails(id) {
   
   // جلب التقييمات من Firebase
   let reviewsHtml = '';
+  let dynamicAvgRating = 0;
+  let dynamicTotalRatings = 0;
+  
   try {
     const reviews = await loadReviewsForProduct(p.id);
+    dynamicTotalRatings = reviews.length;
     if (reviews.length > 0) {
+      dynamicAvgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      
       reviewsHtml = reviews.map(r => {
         let repliesHtml = '';
         if (r.replies && r.replies.length > 0) {
@@ -753,8 +759,8 @@ async function renderProductDetails(id) {
       <h1 class="product-details-title">${escapeHtml(p.name)}</h1>
       
       <div class="product-details-rating">
-        <div class="stars">${renderStars(p.avgRating || 0)}</div>
-        <span class="count">(${p.totalRatings || 0} تقييم)</span>
+        <div class="stars">${renderStars(dynamicAvgRating)}</div>
+        <span class="count">(${dynamicTotalRatings} تقييم)</span>
       </div>
       
       <div class="product-details-price ${hasOffer ? 'sale-price' : ''}" id="mainPriceDisplay">
@@ -941,20 +947,6 @@ async function renderProductDetails(id) {
     
     const reviewId = await saveReviewToFirebase(p.id, reviewData);
     if (reviewId) {
-      // ✨ تحديث متوسط التقييم وعدد التقييمات في المنتج
-      const allReviews = await loadReviewsForProduct(p.id);
-      const totalRatings = allReviews.length;
-      const avgRating = totalRatings > 0 
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
-        : 0;
-      
-      const prodIdx = products.findIndex(x => x.id === p.id);
-      if (prodIdx !== -1) {
-        products[prodIdx].avgRating = avgRating;
-        products[prodIdx].totalRatings = totalRatings;
-        await saveStoreData();
-      }
-      
       showToast('شكراً لتقييمك!');
       playSound();
       renderProductDetails(p.id);
