@@ -15,12 +15,12 @@ export const firebaseConfig = {
 export const ADMIN_EMAIL = "admin@gmail.com";
 
 /* ------------------------------------------------------------
-   البيانات الافتراضية للمتجر (تتحمل أول مرة بس)
-   بعد كده أي تعديل من لوحة الأدمن بيتحفظ في Firestore
+   Default store data (loaded only on first run)
+   After that, any change from the admin panel is saved to Firestore
    ------------------------------------------------------------ */
 export const DEFAULT_STORE_CONFIG = {
-  name: "قطان",
+  name: "Qattan",
   phone: "201225899225",
-  address: "القاهرة",
-  workingHours: "١٠ ص — ١٠ م"
+  address: "Cairo",
+  workingHours: "10 AM — 10 PM"
 };
